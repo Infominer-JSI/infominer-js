@@ -1,9 +1,28 @@
+// //////////////////////////////////////////////
+// Process Control
+// This is the class that stores the metadata
+// and enables communcation with the child
+// processes.
+// //////////////////////////////////////////////
+
 import { fork } from "child_process";
 
-import { ICallbackFunc, IChildH, ICallbackH, IChildMsg, IParentMsg, IProcessHandlerParams } from "../interfaces";
+import {
+    TCallbackFunction,
+    EParentCmd,
+    IChildH,
+    ICallbackH,
+    IProcessSendParams,
+    IChildMsg,
+    IProcessControlParams,
+} from "../interfaces";
 
-// child process handler instance
-export default class ProcessHandler {
+// //////////////////////////////////////////////
+// Define Child Process Control Class
+// //////////////////////////////////////////////
+
+// child process control instance
+export default class ProcessControl {
     private _currentReqId: number;
     private _childH: Map<number, IChildH>;
     private _callbackH: Map<number, ICallbackH>;
@@ -11,8 +30,8 @@ export default class ProcessHandler {
     private _processMaxAge: number;
     private _cleanupInterval: NodeJS.Timeout;
 
-    // construct the process handler
-    constructor(params: IProcessHandlerParams) {
+    // construct the process control
+    constructor(params: IProcessControlParams) {
         //set default variables
         this._currentReqId = 0;
         this._childH = new Map();
@@ -38,14 +57,16 @@ export default class ProcessHandler {
         child.on("message", (message: IChildMsg) => {
             // get the message request ID and callback
             const requestId = message.requestId;
+            console.log("Parent", requestId, message.results);
+
             const callbackH = this._callbackH.get(requestId);
             if (callbackH) {
                 // get the callback function
                 const callback = callbackH.callback;
-
                 const error = message.error ? new Error(message.error) : undefined;
                 // envoke the callback
                 callback(error, message.results);
+                console.log(requestId, callback);
                 // delete the callback hash
                 this._callbackH.delete(requestId);
             }
@@ -73,7 +94,7 @@ export default class ProcessHandler {
     }
 
     // sent the message to the child process. response is requested
-    sendAndWait(childId: number, params: IParentMsg, callback: ICallbackFunc<any>) {
+    sendAndWait(childId: number, params: IProcessSendParams, callback: TCallbackFunction<any>) {
         const childH = this._getChild(childId);
         if (!childH) {
             return callback(new Error("Child process does not exist"));
@@ -130,7 +151,9 @@ export default class ProcessHandler {
         return new Promise((reject, resolve) => {
             console.log("Running stop process taks for child id=", childId);
             try {
-                this.sendAndWait(childId, { cmd: "shutdown" }, (error) => (error ? reject(error) : resolve()));
+                this.sendAndWait(childId, { cmd: EParentCmd.SHUTDOWN }, (error) =>
+                    error ? reject(error) : resolve()
+                );
             } catch (xerror) {
                 console.log("Child already closed");
                 return reject(xerror);

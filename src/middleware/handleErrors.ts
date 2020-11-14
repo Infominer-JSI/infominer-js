@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 
-import { GeneralError } from "../utils/errors";
+import { GeneralError } from "../utils/ErrorDefs";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const handleErrors = (err: Error, _req: Request, res: Response, _next: NextFunction) => {

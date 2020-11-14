@@ -1,7 +1,7 @@
 import path from "path";
 import multer from "multer";
 
-import { createDirectoryPath } from "../utils/fileSystem";
+import { createDirectoryPath } from "../utils/FileSystem";
 
 // create the temporary folder
 const TMP_UPLOAD_PATH = path.join(__dirname, "..", "..", "tmp", "upload");
