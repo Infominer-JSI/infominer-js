@@ -39,21 +39,15 @@ const processSend = (message: IChildMsg) => (process.send ? process.send(message
 
 // correctly handles the sent message
 function messageHandler(message: IParentMsg) {
-    if (!message.body.cmd) {
-        const { requestId } = message;
-        processSend({ requestId, error: "Undefined message command" });
-    }
-
     switch (message.body.cmd) {
         case EParentCmd.INIT:
-            break;
-        case EParentCmd.OPEN_DATASET:
-            openDataset(message);
+            initialize(message);
             break;
         case EParentCmd.SHUTDOWN:
             shutdownProcess(message);
             break;
         default:
+            unknownCommand(message);
             break;
     }
 }
@@ -77,9 +71,9 @@ function _functionWrapper(message: IParentMsg, callback: TMessageProcess) {
 }
 
 // open the dataset
-function openDataset(message: IParentMsg) {
+function initialize(message: IParentMsg) {
     _functionWrapper(message, () => ({
-        message: "Dataset is not open",
+        message: "Dataset initialized",
     }));
 }
 
@@ -96,4 +90,11 @@ function shutdownProcess(message: IParentMsg) {
     // clear the interval and exit the child process
     clearInterval(interval);
     process.exit(0);
+}
+
+// handle unknown commands
+function unknownCommand(message: IParentMsg) {
+    _functionWrapper(message, () => ({
+        message: `unknown command: ${message.body.cmd}`,
+    }));
 }

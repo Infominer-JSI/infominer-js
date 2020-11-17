@@ -8,7 +8,7 @@
 import { fork } from "child_process";
 
 import {
-    TCallbackFunction,
+    TGeneralCallback,
     EParentCmd,
     IChildH,
     ICallbackH,
@@ -57,8 +57,6 @@ export default class ProcessControl {
         child.on("message", (message: IChildMsg) => {
             // get the message request ID and callback
             const requestId = message.requestId;
-            console.log("Parent", requestId, message.results);
-
             const callbackH = this._callbackH.get(requestId);
             if (callbackH) {
                 // get the callback function
@@ -66,7 +64,6 @@ export default class ProcessControl {
                 const error = message.error ? new Error(message.error) : undefined;
                 // envoke the callback
                 callback(error, message.results);
-                console.log(requestId, callback);
                 // delete the callback hash
                 this._callbackH.delete(requestId);
             }
@@ -94,7 +91,7 @@ export default class ProcessControl {
     }
 
     // sent the message to the child process. response is requested
-    sendAndWait(childId: number, params: IProcessSendParams, callback: TCallbackFunction<any>) {
+    sendAndWait(childId: number, params: IProcessSendParams, callback: TGeneralCallback<any>) {
         const childH = this._getChild(childId);
         if (!childH) {
             return callback(new Error("Child process does not exist"));
@@ -149,7 +146,7 @@ export default class ProcessControl {
     // stop the process
     _stopProcess(childId: number) {
         return new Promise((reject, resolve) => {
-            console.log("Running stop process taks for child id=", childId);
+            console.log("Running stop process tasks for child id=", childId);
             try {
                 this.sendAndWait(childId, { cmd: EParentCmd.SHUTDOWN }, (error) =>
                     error ? reject(error) : resolve()
@@ -178,7 +175,7 @@ export default class ProcessControl {
     async closeProcesses() {
         const tasks = [];
         for (const key of this._childH.keys()) {
-            tasks.push(this._stopProcess(key));
+            tasks.push(key ? this._stopProcess(key) : null);
         }
         // clear the cleanup interval
         clearInterval(this._cleanupInterval);

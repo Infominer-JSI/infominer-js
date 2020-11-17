@@ -9,7 +9,7 @@
 // Import Interfaces
 // //////////////////////////////////////////////
 
-import { TCallbackFunction, EParentCmd, IProcessSendParams } from "../interfaces";
+import { TGeneralCallback, TRequestCallback, EParentCmd, IProcessSendParams } from "../interfaces";
 import { Request, Response, NextFunction } from "express";
 
 // //////////////////////////////////////////////
@@ -40,37 +40,27 @@ const processControl = new ProcessControl({
 // //////////////////////////////////////////////
 
 // send a message to the child process
-const _initProcess = async (childId: number, owner: string, callback: TCallbackFunction<any>) => {
+const _initProcess = async (childId: number, owner: string, callback: TGeneralCallback<any>) => {
     try {
-        const datasets = await model.getDatasets({ id: childId, owner });
-        if (datasets.length !== 1) {
-            throw new Error(`Multiple or none results found: ${datasets.length}`);
-        }
+        // TODO: get the dataset metadata used to open it
+        // const datasets = await model.getDatasets({ id: childId, owner });
+        // if (datasets.length !== 1) {
+        //     throw new Error(`Multiple or none results found: ${datasets.length}`);
+        // }
         // get the dataset parameters
-        const [
-            {
-                label,
-                description,
-                created,
-                dbpath: dbPath,
-                parameters: { fields, stopwords },
-            },
-        ] = datasets;
+        // const [
+        //     {
+        //         label,
+        //         description,
+        //         created,
+        //         dbpath: dbPath,
+        //         parameters: { fields, stopwords },
+        //     },
+        // ] = datasets;
 
         const params = {
-            cmd: EParentCmd.OPEN_DATASET,
-            message: {
-                datasetId: childId,
-                label,
-                description,
-                created,
-                mode: "open",
-                dbPath,
-                fields,
-                parameters: {
-                    stopwords,
-                },
-            },
+            cmd: EParentCmd.INIT,
+            message: {},
         };
         // initialize the child process
         processControl.createChild(childId);
@@ -87,7 +77,7 @@ const sendToProcess = (
     childId: number,
     owner: string,
     message: IProcessSendParams,
-    callback: TCallbackFunction<any>
+    callback: TGeneralCallback<any>
 ) => {
     // the intermediate function used to send messages
     const sendMessage = (error?: Error) => {
@@ -108,4 +98,16 @@ const generalUserResponse = (_req: Request, res: Response, next: NextFunction) =
     results?: any
 ) => (error ? next(new ServerError(error.message)) : res.status(200).json(results));
 
-export { processControl, sendToProcess, generalUserResponse };
+// creates a general request wrapper
+function requestWrapper(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+    callback: TRequestCallback
+) {
+    const { id, owner, cmd, content } = callback();
+    const message = { cmd, content };
+    sendToProcess(id, owner, message, generalUserResponse(req, res, next));
+}
+
+export { processControl, requestWrapper };
