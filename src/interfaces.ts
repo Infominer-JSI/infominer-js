@@ -1,8 +1,7 @@
 import { ChildProcess } from "child_process";
-import { Request } from "express";
 
 //////////////////////////////////////////////////////
-// Different callbacks
+// Callback definitions
 //////////////////////////////////////////////////////
 
 export type TSimpleCallback = (error?: Error) => void;

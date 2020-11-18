@@ -8,28 +8,30 @@ import { RouteNotFound } from "./utils/ErrorDefs";
 import handleErrors from "./middleware/handleErrors";
 
 // //////////////////////////////////////////////
-// Setup the graceful shutdowns
+// Setup the graceful shutdown
 // //////////////////////////////////////////////
 
 import { processControl } from "./utils/processHandlers";
 
 // shutdown all of the child processes
 async function gracefulShutdown() {
-    const status = await processControl.closeProcesses();
-    console.log("Graceful Shutdown", status);
+    if (process.platform === "win32") {
+        const status = await processControl.closeProcesses();
+        console.log("Graceful Shutdown", status);
+    }
+    // close the process
+    process.exit(0);
 }
 
 // manual graceful restart
-process.on("SIGINT", async () => {
-    await gracefulShutdown();
-    process.exit(0);
-});
+process.on("SIGINT", gracefulShutdown);
 
 // nodemon graceful restart
-process.on("SIGUSR2", async () => {
-    await gracefulShutdown();
-    process.exit(0);
-});
+process.on("SIGUSR1", gracefulShutdown);
+process.on("SIGUSR2", gracefulShutdown);
+
+// catches uncaught exceptions
+process.on("uncaughtException", gracefulShutdown);
 
 // //////////////////////////////////////////////
 // Configure the express app
@@ -48,7 +50,13 @@ app.use(
 
 app.use(cookieParser(""));
 
+app.use((req, res, next) => {
+    req.owner = "development";
+    next();
+});
+
 import routes from "./routes/v1/routes";
+import { Server } from "http";
 app.use("/api/v1/", routes);
 
 // set all other routes not available
@@ -65,3 +73,6 @@ app.listen(port, () => {
     // tslint:disable-next-line:no-console
     console.log(`server started at http://localhost:${port}`);
 });
+
+// export the server for testing
+export default Server;

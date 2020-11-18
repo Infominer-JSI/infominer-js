@@ -1,15 +1,12 @@
-// //////////////////////////////////////////////
-// File System
-// This defines and exports the functions for
-// manipulating with files and directories.
-// //////////////////////////////////////////////
+/***********************************************
+ * File System
+ * This defines and exports the functions for
+ * manipulating with files and directories.
+ */
 
+// import modules
 import fs from "fs";
 import path from "path";
-
-// //////////////////////////////////////////////
-// Define File System Manipulation Functions
-// //////////////////////////////////////////////
 
 // removes the file
 export function removeFile(fileName: string) {

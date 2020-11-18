@@ -1,12 +1,11 @@
-// //////////////////////////////////////////////
-// Process Control
-// This is the class that stores the metadata
-// and enables communcation with the child
-// processes.
-// //////////////////////////////////////////////
+/***********************************************
+ * Process Control
+ * This is the class that stores the metadata
+ * and enables communcation with the child
+ * processes.
+ */
 
-import { fork } from "child_process";
-
+// import interfaces
 import {
     TGeneralCallback,
     EParentCmd,
@@ -17,9 +16,8 @@ import {
     IProcessControlParams,
 } from "../interfaces";
 
-// //////////////////////////////////////////////
-// Define Child Process Control Class
-// //////////////////////////////////////////////
+// import modules
+import { fork } from "child_process";
 
 // child process control instance
 export default class ProcessControl {
@@ -148,6 +146,7 @@ export default class ProcessControl {
         return new Promise((reject, resolve) => {
             console.log("Running stop process tasks for child id=", childId);
             try {
+                console.log("Send request");
                 this.sendAndWait(childId, { cmd: EParentCmd.SHUTDOWN }, (error) =>
                     error ? reject(error) : resolve()
                 );

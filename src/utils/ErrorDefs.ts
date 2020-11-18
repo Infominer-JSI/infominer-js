@@ -1,8 +1,8 @@
-// //////////////////////////////////////////////
-// Error Defs
-// This defines the different error types that
-// are used throughout the project.
-// //////////////////////////////////////////////
+/***********************************************
+ * Error Definitions
+ * This defines the different error types that
+ * are used throughout the project.
+ */
 
 class GeneralError extends Error {
     public statusCode: number;

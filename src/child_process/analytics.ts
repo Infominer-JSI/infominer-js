@@ -1,7 +1,9 @@
 console.log("Start child process, id=", process.pid);
 
+// import interfaces
 import { EParentCmd, IChildMsg, IParentMsg, TMessageProcess } from "../interfaces";
 
+// import modules
 import * as qm from "qminer";
 
 //////////////////////////////////////////////////////
@@ -10,7 +12,7 @@ import * as qm from "qminer";
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 const interval = setInterval(() => {}, 10 * 1000);
 
-// database placeholder
+// TODO: database placeholder
 const database: qm.Base | null = null;
 
 //////////////////////////////////////////////////////
@@ -89,6 +91,7 @@ function shutdownProcess(message: IParentMsg) {
     });
     // clear the interval and exit the child process
     clearInterval(interval);
+    console.log(`Child process id = ${process.pid} shutdown`);
     process.exit(0);
 }
 

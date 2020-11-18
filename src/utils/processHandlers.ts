@@ -1,28 +1,26 @@
-// //////////////////////////////////////////////
-// Process Handlers
-// This initializes the ProcessControl instance
-// and defines all function that will help with
-// sending messages to the child processes.
-// //////////////////////////////////////////////
+/***********************************************
+ * Process Handlers
+ * This initializes the ProcessControl instance
+ * and defines all function that will help with
+ * sending messages to the child processes.
+ */
 
-// //////////////////////////////////////////////
-// Import Interfaces
-// //////////////////////////////////////////////
-
+// Import interfaces
 import { TGeneralCallback, TRequestCallback, EParentCmd, IProcessSendParams } from "../interfaces";
 import { Request, Response, NextFunction } from "express";
 
-// //////////////////////////////////////////////
-// Import Classes and Functions
-// //////////////////////////////////////////////
-
+// Import modules
 import path from "path";
+
+// import utils
 import ProcessControl from "./ProcessControl";
-import DatasetModel from "../models/dataset.model";
 import { ServerError } from "./ErrorDefs";
 
+// import models
+import DatasetModel from "../models/dataset.model";
+
 // //////////////////////////////////////////////
-// Initialize Instances
+// Initialize instances
 // //////////////////////////////////////////////
 
 // initialize the model object
@@ -36,7 +34,7 @@ const processControl = new ProcessControl({
 });
 
 // //////////////////////////////////////////////
-// Define Process Helper Functions
+// Define process helper functions
 // //////////////////////////////////////////////
 
 // send a message to the child process

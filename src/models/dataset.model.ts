@@ -1,4 +1,10 @@
-// import the query function
+/***********************************************
+ * Dataset Model
+ * This model contains the functions for
+ * sending requests to the postgresql database.
+ */
+
+// import model
 import { query } from "./index.model";
 
 // export dataset related queries
@@ -18,7 +24,9 @@ export default class DatasetModel {
         // create the where string of the command
         const SQLWhere = Object.keys(conditions).map((attr: string) => `${attr} = $${count++}`);
         // construct the SQL command and get the results
-        const command = `SELECT * FROM ${this._tableName} ${SQLWhere.length ? `WHERE ${SQLWhere.join(" AND ")}` : ""};`;
+        const command = `SELECT * FROM ${this._tableName} ${
+            SQLWhere.length ? `WHERE ${SQLWhere.join(" AND ")}` : ""
+        };`;
         const results = await query(command, params);
         return results.rows;
     }
@@ -31,7 +39,9 @@ export default class DatasetModel {
         // create the where string of the command
         const SQLWhere = Object.keys(conditions).map((attr: string) => `${attr} = $${count++}`);
         // construct the SQL command and get the results
-        const command = `DELETE FROM ${this._tableName} ${SQLWhere.length ? `WHERE ${SQLWhere.join(" AND ")}` : ""};`;
+        const command = `DELETE FROM ${this._tableName} ${
+            SQLWhere.length ? `WHERE ${SQLWhere.join(" AND ")}` : ""
+        };`;
         const results = await query(command, params);
         return results.rows;
     }

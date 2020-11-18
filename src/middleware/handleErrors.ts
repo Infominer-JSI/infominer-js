@@ -1,3 +1,9 @@
+/***********************************************
+ * Handle errors
+ * This middleware handles errors that are
+ * evoked by the service.
+ */
+
 import { Request, Response, NextFunction } from "express";
 
 import { GeneralError } from "../utils/ErrorDefs";
