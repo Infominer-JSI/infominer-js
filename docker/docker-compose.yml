@@ -1,0 +1,17 @@
+version: "3.1"
+
+services:
+  infominer_db:
+    image: postgres:13
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=infominer
+    ports:
+      - "5440:5432"
+    volumes:
+      - infominer_db-data:/var/lib/postgresql/data
+
+volumes:
+  infominer_db-data:

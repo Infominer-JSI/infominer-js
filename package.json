@@ -45,9 +45,9 @@
         "express": "^4.17.1",
         "express-session": "^1.17.1",
         "express-validator": "^6.6.1",
+        "minimist": "^1.2.5",
         "multer": "^1.4.2",
         "pg": "^8.5.0",
-        "pg-cursor": "^2.5.0",
         "qminer": "^9.3.2"
     }
 }
