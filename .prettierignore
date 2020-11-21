@@ -1,4 +1,7 @@
 # ignore the docker-compose file
 docker-compose.yml
-
+# ignore tools files
 tools
+# ignore CI & CD configs
+.travis.yml
+.huskyrc
