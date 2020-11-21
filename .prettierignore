@@ -3,7 +3,7 @@ docker-compose.yml
 # ignore tools files
 tools
 # ignore CI & CD configs
-.appveyor.yml
+appveyor.yml
 .travis.yml
 .huskyrc
 
