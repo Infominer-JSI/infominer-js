@@ -97,6 +97,15 @@ To start the project run the following command:
 npm start
 ```
 
+## Build
+
+To build the project run the following command:
+
+```bash
+npm run build
+```
+
+
 [postgres-docker]: https://hub.docker.com/_/postgres
 [postgres-manual]: https://www.postgresql.org/download/
 [docker-compose]: ./docker/docker-compose.yml
