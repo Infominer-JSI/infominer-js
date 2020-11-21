@@ -87,7 +87,8 @@ one can set up and install the [postgres database][postgres-manual].
     node ./load/execute --files=update.v1.sql
     ```
 
-    This will create the required infominer tables. The table definitions are defined in files found in the [./load/postgres][postgres-defs] folder.
+    This will create the required infominer tables. The table definitions are defined in files found in 
+    the [./load/postgres][postgres-defs] folder.
 
 ## Start
 
@@ -110,4 +111,4 @@ npm run build
 [postgres-manual]: https://www.postgresql.org/download/
 [docker-compose]: ./docker/docker-compose.yml
 [env]: ./env
-[postgres-defs]: ./src/postgres
+[postgres-defs]: ./load/postgres
