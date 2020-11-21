@@ -38,7 +38,7 @@ one can set up and install the [postgres database][postgres-manual].
         cd ./docker
         ```
 
-    -   Modify the following fields in [docker-compose.yml][./docker/docker-compose.yml]:
+    -   Modify the following fields in [docker-compose.yml][docker-compose]:
 
         -   `POSTGRES_PASSWORD`: make sure it is secure
 
@@ -99,6 +99,6 @@ npm start
 
 [postgres-docker]: https://hub.docker.com/_/postgres
 [postgres-manual]: https://www.postgresql.org/download/
-[docker-compose]: ../docker/docker-compose.yml
+[docker-compose]: ./docker/docker-compose.yml
 [env]: ./env
 [postgres-defs]: ./src/postgres
