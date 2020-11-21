@@ -17,7 +17,7 @@ import { parseParams, parseCredentials } from "../../utils/requestParsers";
 import DatasetModel from "../../models/dataset.model";
 
 // initialize the dataset model
-const datasetModel = new DatasetModel("infominer_datasets");
+const datasetModel = new DatasetModel("im_datasets");
 
 // //////////////////////////////////////////////
 // Export controllers

@@ -24,7 +24,7 @@ import DatasetModel from "../models/dataset.model";
 // //////////////////////////////////////////////
 
 // initialize the model object
-const model = new DatasetModel("infominer_datasets");
+const model = new DatasetModel("im_datasets");
 
 // initialize the process control
 const processControl = new ProcessControl({
