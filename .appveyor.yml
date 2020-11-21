@@ -1,0 +1,22 @@
+environment:
+  matrix:
+    - nodejs_version: "10"
+    - nodejs_version: "12"
+    - nodejs_version: "14"
+
+platform:
+  - x86
+  - x64
+
+install:
+  - ps: Install-Product node $env:nodejs_version $env:platform
+  - npm install
+
+build_script:
+  - npm run build --if-present
+
+test_script:
+  - npm run lint
+  - npm test
+
+build: off
