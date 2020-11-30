@@ -1,11 +1,16 @@
+// import server modules
 import express from "express";
 
+// import parsing modules
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 
 // import error handling objects
 import { RouteNotFound } from "./utils/ErrorDefs";
 import handleErrors from "./middleware/handleErrors";
+
+// import logging modules
+import morganLogger from "./middleware/logger";
 
 // //////////////////////////////////////////////
 // Setup the graceful shutdown
@@ -39,6 +44,10 @@ process.on("uncaughtException", gracefulShutdown);
 
 const app = express();
 
+// add request logging
+app.use(morganLogger);
+
+// add request parsers
 app.use(bodyParser.json({ limit: "10mb" })); // to support JSON-encoded bodies
 app.use(
     bodyParser.urlencoded({
@@ -55,8 +64,8 @@ app.use((req, res, next) => {
     next();
 });
 
+// import routes
 import routes from "./routes/v1/routes";
-import { Server } from "http";
 app.use("/api/v1/", routes);
 
 // set all other routes not available
@@ -75,4 +84,4 @@ app.listen(port, () => {
 });
 
 // export the server for testing
-export default Server;
+export default app;

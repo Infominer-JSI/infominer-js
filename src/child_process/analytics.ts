@@ -60,11 +60,11 @@ function messageHandler(message: IParentMsg) {
 // the message processing function wrapper
 // the callback is the function that handles with the messages body and returns
 // its input as the results
-function _functionWrapper(message: IParentMsg, callback: TMessageProcess) {
+async function _functionWrapper(message: IParentMsg, callback: TMessageProcess) {
     const { requestId, body } = message;
     try {
         // do something with the body and return the output
-        const results = callback(body);
+        const results = await callback(body);
         processSend({ requestId, results });
     } catch (error) {
         // send the error message back to the parent
@@ -80,8 +80,8 @@ function initialize(message: IParentMsg) {
 }
 
 // shutdown the child process
-function shutdownProcess(message: IParentMsg) {
-    _functionWrapper(message, () => {
+async function shutdownProcess(message: IParentMsg) {
+    await _functionWrapper(message, () => {
         // get the databse path and close the database
         const dbPath = database ? database.close() : null; // replace with this database.getDbPath()
         if (database) {

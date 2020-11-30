@@ -6,6 +6,7 @@ config({ path: resolve(__dirname, "..", "..", "env", ".env") });
 
 // export the environment variables
 export default {
+    env: process.env.NODE_ENV,
     pg: {
         host: process.env.PG_HOST || "127.0.0.1",
         port: parseInt(process.env.PG_PORT || "", 10) || 5432,
