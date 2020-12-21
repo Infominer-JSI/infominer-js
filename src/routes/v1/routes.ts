@@ -78,9 +78,21 @@ const routeDefs = [
     { method: "GET", route: "/datasets", middleware: [], controller: controllers.getDatasets },
     {
         method: "POST",
-        route: "/datasets",
+        route: "/datasets/upload",
         middleware: [uploadFile],
         controller: controllers.uploadDataset,
+    },
+    {
+        method: "POST",
+        route: "/datasets/create",
+        middleware: [],
+        controller: controllers.createDataset,
+    },
+    {
+        method: "POST",
+        route: "/datasets/cancel",
+        middleware: [],
+        controller: controllers.cancelDataset,
     },
     {
         method: "GET",
@@ -93,12 +105,6 @@ const routeDefs = [
         route: "/datasets/:datasetId",
         middleware: converters.datasets,
         controller: controllers.getDataset,
-    },
-    {
-        method: "POST",
-        route: "/datasets/:datasetId",
-        middleware: converters.datasets,
-        controller: controllers.createDataset,
     },
     {
         method: "PUT",

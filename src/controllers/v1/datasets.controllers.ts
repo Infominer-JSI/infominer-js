@@ -70,6 +70,23 @@ export const createDataset = (req: Request, res: Response, next: NextFunction) =
     // });
 };
 
+// creates the dataset
+export const cancelDataset = (req: Request, res: Response, next: NextFunction) => {
+    // ! TODO: special case
+    // TODO: finalize the command
+    // TODO: check request structure
+    return res.status(200).json({ message: "Cancel Dataset" });
+    // return requestWrapper(req, res, next, () => {
+    //     // TODO: finalize the command
+    //     // parse the request
+    //     const { owner } = parseCredentials(req);
+    //     const { datasetId } = parseParams(req);
+    //     // assign the command
+    //     const cmd = EParentCmd.CREATE_DATASET;
+    //     return { id: datasetId, owner, cmd, content: null };
+    // });
+};
+
 // checks the dataset status
 export const checkDatasetStatus = (req: Request, res: Response, next: NextFunction) => {
     // ! TODO: special case
