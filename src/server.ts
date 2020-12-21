@@ -1,6 +1,8 @@
 // import server modules
 import express from "express";
+import favicon from "serve-favicon";
 
+import path from "path";
 // import parsing modules
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
@@ -64,6 +66,13 @@ app.use((req, res, next) => {
     next();
 });
 
+// add a public folder
+app.use(favicon(path.join(__dirname, "public", "favicon.ico")));
+
+// //////////////////////////////////////////////
+// Add the routes
+// //////////////////////////////////////////////
+
 // import routes
 import routes from "./routes/v1/routes";
 app.use("/api/v1/", routes);
@@ -75,6 +84,10 @@ app.use("*", (req, _res, next) => {
 
 // handle errors
 app.use(handleErrors);
+
+// //////////////////////////////////////////////
+// Start the service
+// //////////////////////////////////////////////
 
 const port = 8100; // default port to listen
 
