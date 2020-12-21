@@ -19,6 +19,8 @@ import { parseParams, parseBody, parseCredentials } from "../../utils/requestPar
 // gets the subsets
 export const getSubsets = (req: Request, res: Response, next: NextFunction) => {
     return requestWrapper(req, res, next, () => {
+        // TODO: finalize the command
+        // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId } = parseParams(req);
@@ -33,6 +35,7 @@ export const getSubsets = (req: Request, res: Response, next: NextFunction) => {
 export const createSubset = (req: Request, res: Response, next: NextFunction) => {
     return requestWrapper(req, res, next, () => {
         // TODO: finalize the command
+        // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId } = parseParams(req);
@@ -47,6 +50,8 @@ export const createSubset = (req: Request, res: Response, next: NextFunction) =>
 // gets a subset
 export const getSubset = (req: Request, res: Response, next: NextFunction) => {
     return requestWrapper(req, res, next, () => {
+        // TODO: finalize the command
+        // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId, subsetId } = parseParams(req);
@@ -61,6 +66,7 @@ export const getSubset = (req: Request, res: Response, next: NextFunction) => {
 export const updateSubset = (req: Request, res: Response, next: NextFunction) => {
     return requestWrapper(req, res, next, () => {
         // TODO: finalize the command
+        // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId, subsetId } = parseParams(req);
@@ -74,6 +80,8 @@ export const updateSubset = (req: Request, res: Response, next: NextFunction) =>
 // deletes a subset
 export const deleteSubset = (req: Request, res: Response, next: NextFunction) => {
     return requestWrapper(req, res, next, () => {
+        // TODO: finalize the command
+        // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId, subsetId } = parseParams(req);

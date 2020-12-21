@@ -1,8 +1,10 @@
 // import server modules
 import express from "express";
 import favicon from "serve-favicon";
+import passport from "passport";
 
 import path from "path";
+
 // import parsing modules
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
@@ -41,9 +43,20 @@ process.on("SIGUSR2", gracefulShutdown);
 process.on("uncaughtException", gracefulShutdown);
 
 // //////////////////////////////////////////////
+// Get process parameters
+// //////////////////////////////////////////////
+
+import minimist from "minimist";
+// get process arguments
+const argv = minimist(process.argv.slice(2));
+const PORT = argv.PORT || 8100;
+const DEV_MODE = argv.DEV_MODE;
+
+// //////////////////////////////////////////////
 // Configure the express app
 // //////////////////////////////////////////////
 
+// inititalize the express app
 const app = express();
 
 // add request logging
@@ -66,8 +79,27 @@ app.use((req, res, next) => {
     next();
 });
 
-// add a public folder
+// //////////////////////////////////////////////
+// Add public folder
+// //////////////////////////////////////////////
+
+// add the favicon
 app.use(favicon(path.join(__dirname, "public", "favicon.ico")));
+
+// //////////////////////////////////////////////
+// Set authentication
+// //////////////////////////////////////////////
+
+// passport configuration
+import configuration from "./middleware/auth/configuration";
+configuration(passport);
+// initialize authentication
+app.use(passport.initialize());
+app.use(passport.session());
+
+// set authentication routes
+import authentication from "./middleware/auth/authentication";
+authentication(app, passport, DEV_MODE);
 
 // //////////////////////////////////////////////
 // Add the routes
@@ -89,11 +121,9 @@ app.use(handleErrors);
 // Start the service
 // //////////////////////////////////////////////
 
-const port = 8100; // default port to listen
-
-app.listen(port, () => {
+app.listen(PORT, () => {
     // tslint:disable-next-line:no-console
-    console.log(`server started at http://localhost:${port}`);
+    console.log(`server started at http://localhost:${PORT}`);
 });
 
 // export the server for testing

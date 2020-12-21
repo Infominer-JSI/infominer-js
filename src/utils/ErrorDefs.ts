@@ -19,6 +19,13 @@ class BadRequest extends GeneralError {
     }
 }
 
+// user not authorized error
+class UserNotAuthorized extends GeneralError {
+    constructor(message: string) {
+        super(401, message);
+    }
+}
+
 // the route not found error
 class RouteNotFound extends GeneralError {
     constructor(message: string) {
@@ -33,4 +40,4 @@ class ServerError extends GeneralError {
     }
 }
 
-export { GeneralError, BadRequest, RouteNotFound, ServerError };
+export { GeneralError, BadRequest, RouteNotFound, ServerError, UserNotAuthorized };

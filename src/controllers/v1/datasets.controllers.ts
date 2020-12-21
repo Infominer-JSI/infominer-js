@@ -48,12 +48,16 @@ export const getDatasets = async (req: Request, res: Response, next: NextFunctio
 // uploads the dataset
 export const uploadDataset = (req: Request, res: Response, next: NextFunction) => {
     // ! TODO: special case
+    // TODO: finalize the command
+    // TODO: check request structure
     return res.status(200).json({ message: "Upload Dataset" });
 };
 
 // creates the dataset
 export const createDataset = (req: Request, res: Response, next: NextFunction) => {
     // ! TODO: special case
+    // TODO: finalize the command
+    // TODO: check request structure
     return res.status(200).json({ message: "Create Dataset" });
     // return requestWrapper(req, res, next, () => {
     //     // TODO: finalize the command
@@ -69,6 +73,8 @@ export const createDataset = (req: Request, res: Response, next: NextFunction) =
 // checks the dataset status
 export const checkDatasetStatus = (req: Request, res: Response, next: NextFunction) => {
     // ! TODO: special case
+    // TODO: finalize the command
+    // TODO: check request structure
     return res.status(200).json({ message: "Check Dataset Status" });
     // return requestWrapper(req, res, next, () => {
     //     // TODO: finalize the command
@@ -85,6 +91,8 @@ export const checkDatasetStatus = (req: Request, res: Response, next: NextFuncti
 // gets the dataset
 export const getDataset = (req: Request, res: Response, next: NextFunction) => {
     return requestWrapper(req, res, next, () => {
+        // TODO: finalize the command
+        // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId } = parseParams(req);
@@ -99,6 +107,8 @@ export const getDataset = (req: Request, res: Response, next: NextFunction) => {
 export const updateDataset = (req: Request, res: Response, next: NextFunction) => {
     return requestWrapper(req, res, next, () => {
         // TODO: finalize the command
+        // TODO: check request structure
+        // TODO: finalize the command
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId } = parseParams(req);
@@ -112,6 +122,8 @@ export const updateDataset = (req: Request, res: Response, next: NextFunction) =
 // deletes the dataset
 export const deleteDataset = (req: Request, res: Response, next: NextFunction) => {
     // ! TODO: special case
+    // TODO: finalize the command
+    // TODO: check request structure
     return res.status(200).json({ message: "Delete Dataset" });
     // return requestWrapper(req, res, next, () => {
     //     // TODO: finalize the command

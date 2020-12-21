@@ -15,4 +15,16 @@ export default {
         password: process.env.PG_PASSWORD,
         connectionTimeoutMillis: parseInt(process.env.PG_CONNECTION_TIMEOUT || "", 10) || 3000,
     },
+    login: {
+        google: {
+            clientID: process.env.GOOGLE_CLIENT_ID || "clientID",
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET || "clientSecret",
+            callbackURL: process.env.GOOGLE_CALLBACK_URL || "callbackURL",
+        },
+        twitter: {
+            consumerKey: process.env.TWITTER_CONSUMER_KEY || "consumerKey",
+            consumerSecret: process.env.TWITTER_CONSUMER_SECRET || "clientSecret",
+            callbackURL: process.env.TWITTER_CALLBACK_URL || "callbackURL",
+        },
+    },
 };

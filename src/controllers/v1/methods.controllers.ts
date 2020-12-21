@@ -19,6 +19,8 @@ import { parseParams, parseBody, parseCredentials } from "../../utils/requestPar
 // gets the methods
 export const getMethods = (req: Request, res: Response, next: NextFunction) => {
     return requestWrapper(req, res, next, () => {
+        // TODO: finalize the command
+        // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId } = parseParams(req);
@@ -33,6 +35,7 @@ export const getMethods = (req: Request, res: Response, next: NextFunction) => {
 export const createMethod = (req: Request, res: Response, next: NextFunction) => {
     return requestWrapper(req, res, next, () => {
         // TODO: finalize the command
+        // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId } = parseParams(req);
@@ -48,6 +51,7 @@ export const createMethod = (req: Request, res: Response, next: NextFunction) =>
 export const checkMethodStatus = (req: Request, res: Response, next: NextFunction) => {
     return requestWrapper(req, res, next, () => {
         // TODO: finalize the command
+        // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId, methodId } = parseParams(req);
@@ -61,6 +65,8 @@ export const checkMethodStatus = (req: Request, res: Response, next: NextFunctio
 // gets the method
 export const getMethod = (req: Request, res: Response, next: NextFunction) => {
     return requestWrapper(req, res, next, () => {
+        // TODO: finalize the command
+        // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId, methodId } = parseParams(req);
@@ -75,6 +81,7 @@ export const getMethod = (req: Request, res: Response, next: NextFunction) => {
 export const updateMethod = (req: Request, res: Response, next: NextFunction) => {
     return requestWrapper(req, res, next, () => {
         // TODO: finalize the command
+        // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId, methodId } = parseParams(req);
@@ -88,6 +95,8 @@ export const updateMethod = (req: Request, res: Response, next: NextFunction) =>
 // deletes the method
 export const deleteMethod = (req: Request, res: Response, next: NextFunction) => {
     return requestWrapper(req, res, next, () => {
+        // TODO: finalize the command
+        // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId, methodId } = parseParams(req);
