@@ -7,7 +7,7 @@ import { ChildProcess } from "child_process";
 export type TSimpleCallback = (error?: Error) => void;
 export type TGeneralCallback<T> = (error?: Error, data?: T) => void;
 export type TRequestCallback = () => { id: number; owner: string; cmd: EParentCmd; content: any };
-export type TMessageProcess = (body?: IProcessSendParams) => any;
+export type TMessageProcess = (body?: IProcessSendParams) => any | Promise<any>;
 
 //////////////////////////////////////////////////////
 // Child process handling related interfaces
