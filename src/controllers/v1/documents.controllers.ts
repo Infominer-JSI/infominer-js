@@ -9,8 +9,8 @@ import { Request, Response, NextFunction } from "express";
 import { EParentCmd } from "../../interfaces";
 
 // import utils
-import { requestWrapper } from "../../utils/processHandlers";
-import { parseParams, parseCredentials } from "../../utils/requestParsers";
+import { generalRequestWrapper } from "../../utils/processHandlers";
+import { parseParams, parseCredentials, parseBody } from "../../utils/requestParsers";
 
 // //////////////////////////////////////////////
 // Export controllers
@@ -18,8 +18,7 @@ import { parseParams, parseCredentials } from "../../utils/requestParsers";
 
 // gets the documents
 export const getDocuments = (req: Request, res: Response, next: NextFunction) => {
-    // ! TODO: special case
-    return requestWrapper(req, res, next, () => {
+    return generalRequestWrapper(req, res, next, () => {
         // TODO: finalize the command
         // parse the request
         const { owner } = parseCredentials(req);
@@ -33,7 +32,7 @@ export const getDocuments = (req: Request, res: Response, next: NextFunction) =>
 
 // gets a specific document
 export const getDocument = (req: Request, res: Response, next: NextFunction) => {
-    return requestWrapper(req, res, next, () => {
+    return generalRequestWrapper(req, res, next, () => {
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId, subsetId, documentId } = parseParams(req);
@@ -46,15 +45,15 @@ export const getDocument = (req: Request, res: Response, next: NextFunction) => 
 
 // updates a specific document
 export const updateDocument = (req: Request, res: Response, next: NextFunction) => {
-    // ! TODO: special case
-    return requestWrapper(req, res, next, () => {
+    return generalRequestWrapper(req, res, next, () => {
         // TODO: finalize the command
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId, subsetId, documentId } = parseParams(req);
+        const { document } = parseBody(req);
         // assign the command
         const cmd = EParentCmd.UPDATE_DOCUMENT;
         // return the values
-        return { id: datasetId, owner, cmd, content: { subsetId, documentId } };
+        return { id: datasetId, owner, cmd, content: { subsetId, documentId, document } };
     });
 };

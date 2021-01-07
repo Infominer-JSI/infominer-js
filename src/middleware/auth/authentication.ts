@@ -63,10 +63,15 @@ export default function (app: Express, passport: PassportStatic, dev_mode?: bool
     // ///////////////////////////////////////////
 
     app.get("/api/v1/auth/account", (req: Request, res: Response) => {
-        // prepare authentication object
-        const authentication = req.isAuthenticated()
-            ? { authenticated: true, user: req.user }
-            : { authenticated: false, user: null };
+        let authentication;
+        if (!dev_mode) {
+            // prepare authentication object
+            authentication = req.isAuthenticated()
+                ? { authenticated: true, user: req.user }
+                : { authenticated: false, user: null };
+        } else {
+            authentication = { authenticated: true, user: "development" };
+        }
         // response with a json object
         res.json(authentication);
     });

@@ -31,8 +31,25 @@ export default class DatasetModel {
         return results.rows;
     }
 
+    // get all datasets that match the parameters
+    async createDataset(values: Record<string, any>) {
+        let count = 1;
+        // get the document values
+        const params = Object.values(values);
+        // get the document attribute names
+        const attributes = Object.keys(values);
+        // create the where string of the command
+        const indicators = attributes.map(() => `$${count++}`);
+        // construct the SQL command and get the results
+        const command = `INSERT INTO ${this._tableName} (${attributes.join(
+            ","
+        )}) VALUES (${indicators.join(",")}) RETURNING *;`;
+        const results = await query(command, params);
+        return results.rows;
+    }
+
     // delete all datasets that match the parameters
-    async deleteDatasets(conditions: Record<string, any>) {
+    async deleteDataset(conditions: Record<string, any>) {
         let count = 1;
         // get the parameters
         const params = Object.values(conditions);
@@ -47,7 +64,7 @@ export default class DatasetModel {
     }
 
     // update the datasets with values that match the conditions
-    async updateDatasets(values: Record<string, any>, conditions: Record<string, any>) {
+    async updateDataset(values: Record<string, any>, conditions: Record<string, any>) {
         let count = 1;
         // create the set strings of the command
         const SQLSet = Object.keys(values).map((attr: string) => `${attr} = $${count++}`);

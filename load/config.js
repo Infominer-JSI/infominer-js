@@ -9,7 +9,7 @@ module.exports = {
     port: parseInt(process.env.PG_PORT || "", 10) || 5432,
     user: process.env.PG_USER || "postgres",
     password: process.env.PG_PASSWORD,
-    database: process.env.PG_DATABSE || "infominer",
+    database: process.env.PG_DATABASE || "infominer",
     connectionTimeoutMillis: parseInt(process.env.PG_CONNECTION_TIMEOUT || "", 10) || 3000,
     multipleStatements: true,
 };

@@ -103,6 +103,8 @@ dist
 # TernJS port file
 .tern-port
 
+# ignore additional files
 .vscode
 build
+data
 tmp

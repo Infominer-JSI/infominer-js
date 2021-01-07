@@ -76,11 +76,19 @@ const routeDefs = [
     // Dataset routes
     // //////////////////////////////////////////////
     { method: "GET", route: "/datasets", middleware: [], controller: controllers.getDatasets },
+    // POST and upload a dataset file to retrieve metadata
     {
         method: "POST",
         route: "/datasets",
         middleware: [uploadFile],
         controller: controllers.uploadDataset,
+    },
+    // POST the dataset metadata for dataset creation
+    {
+        method: "POST",
+        route: "/datasets/:datasetId",
+        middleware: converters.datasets,
+        controller: controllers.createDataset,
     },
     {
         method: "GET",
@@ -93,12 +101,6 @@ const routeDefs = [
         route: "/datasets/:datasetId",
         middleware: converters.datasets,
         controller: controllers.getDataset,
-    },
-    {
-        method: "POST",
-        route: "/datasets/:datasetId",
-        middleware: converters.datasets,
-        controller: controllers.createDataset,
     },
     {
         method: "PUT",
@@ -220,7 +222,7 @@ for (const { method, route, middleware, controller } of routeDefs) {
             router.put(route, middleware, controller);
             break;
         case "DELETE":
-            router.put(route, middleware, controller);
+            router.delete(route, middleware, controller);
             break;
         default:
             throw new Error(`Unknown route method: ${method}`);

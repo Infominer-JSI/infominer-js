@@ -8,6 +8,9 @@
 import fs from "fs";
 import path from "path";
 
+// import configuration
+import { DATAPATH } from "../config/defaults";
+
 // removes the file
 export function removeFile(fileName: string) {
     // check if file exists
@@ -113,4 +116,21 @@ export function createDirectoryPath(dirPath: string) {
         createFolder(currentDir);
     }
     return true;
+}
+
+// //////////////////////////////////////////////
+// Specialized functions
+// //////////////////////////////////////////////
+
+// initialize the data folder
+createFolder(DATAPATH);
+// creates a database directory path
+export function createDatabaseDirectoryPath(owner: string) {
+    // create a random folder name
+    const dbFolder =
+        Math.random().toString(36).substring(2, 15) +
+        Math.random().toString(36).substring(2, 15) +
+        Date.now();
+    // return the database directory path
+    return path.join(DATAPATH, owner.toString(), dbFolder);
 }
