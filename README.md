@@ -95,7 +95,10 @@ one can set up and install the [postgres database][postgres-manual].
 To start the project run the following command:
 
 ```bash
+# run in development mode
 npm run start:dev
+# run in production mode
+npm start
 ```
 
 ## Build
