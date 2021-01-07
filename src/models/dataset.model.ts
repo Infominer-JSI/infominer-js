@@ -32,7 +32,7 @@ export default class DatasetModel {
     }
 
     // get all datasets that match the parameters
-    async uploadDataset(values: Record<string, any>) {
+    async createDataset(values: Record<string, any>) {
         let count = 1;
         // get the document values
         const params = Object.values(values);

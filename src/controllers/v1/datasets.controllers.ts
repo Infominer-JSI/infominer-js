@@ -8,13 +8,16 @@
 import { Request, Response, NextFunction } from "express";
 import { EParentCmd, EDatasetStatus } from "../../interfaces";
 
+// import defaults
+import { LABEL2ID } from "../../config/defaults";
+
 // import utils
-import { ServerError, BadRequest } from "../../utils/ErrorDefs";
 import {
     generalRequestWrapper,
     createDatasetProcess,
     deleteDatasetProcess,
 } from "../../utils/processHandlers";
+import { ServerError, BadRequest } from "../../utils/ErrorDefs";
 import { removeFile, createDatabaseDirectoryPath } from "../../utils/FileSystem";
 import {
     parseBody,
@@ -23,7 +26,6 @@ import {
     parseDelimiter,
     parseColumns,
 } from "../../utils/requestParsers";
-import { LABEL2ID } from "../../config/defaults";
 
 // import models
 import DatasetModel from "../../models/dataset.model";
@@ -81,7 +83,7 @@ export const uploadDataset = async (req: Request, res: Response, next: NextFunct
         }
 
         // store the file metadata into the database
-        const record = await datasetModel.uploadDataset({
+        const record = await datasetModel.createDataset({
             owner,
             file: {
                 filepath,
@@ -252,7 +254,6 @@ export const updateDataset = (req: Request, res: Response, next: NextFunction) =
 
 // deletes the dataset
 export const deleteDataset = async (req: Request, res: Response, next: NextFunction) => {
-    // TODO: finalize the command
     // TODO: check request structure
     // get the user making the request
     const { owner } = parseCredentials(req);
