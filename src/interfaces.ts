@@ -10,6 +10,16 @@ export type TRequestCallback = () => { id: number; owner: string; cmd: EParentCm
 export type TMessageProcess = (body?: IProcessSendParams) => any | Promise<any>;
 
 //////////////////////////////////////////////////////
+// Dataset uploading status
+//////////////////////////////////////////////////////
+
+export enum EDatasetStatus {
+    IN_QUEUE = "IN_QUEUE",
+    LOADING = "LOADING",
+    FINISHED = "FINISHED",
+}
+
+//////////////////////////////////////////////////////
 // Child process handling related interfaces
 //////////////////////////////////////////////////////
 

@@ -9,7 +9,7 @@ import { Request, Response, NextFunction } from "express";
 import { EParentCmd } from "../../interfaces";
 
 // import utils
-import { requestWrapper } from "../../utils/processHandlers";
+import { generalRequestWrapper } from "../../utils/processHandlers";
 import { parseParams, parseBody, parseCredentials } from "../../utils/requestParsers";
 
 // //////////////////////////////////////////////
@@ -18,8 +18,7 @@ import { parseParams, parseBody, parseCredentials } from "../../utils/requestPar
 
 // gets the subsets
 export const getSubsets = (req: Request, res: Response, next: NextFunction) => {
-    return requestWrapper(req, res, next, () => {
-        // TODO: finalize the command
+    return generalRequestWrapper(req, res, next, () => {
         // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
@@ -33,8 +32,7 @@ export const getSubsets = (req: Request, res: Response, next: NextFunction) => {
 
 // creates a new subset
 export const createSubset = (req: Request, res: Response, next: NextFunction) => {
-    return requestWrapper(req, res, next, () => {
-        // TODO: finalize the command
+    return generalRequestWrapper(req, res, next, () => {
         // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
@@ -49,8 +47,7 @@ export const createSubset = (req: Request, res: Response, next: NextFunction) =>
 
 // gets a subset
 export const getSubset = (req: Request, res: Response, next: NextFunction) => {
-    return requestWrapper(req, res, next, () => {
-        // TODO: finalize the command
+    return generalRequestWrapper(req, res, next, () => {
         // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
@@ -64,23 +61,22 @@ export const getSubset = (req: Request, res: Response, next: NextFunction) => {
 
 // updates a subset
 export const updateSubset = (req: Request, res: Response, next: NextFunction) => {
-    return requestWrapper(req, res, next, () => {
-        // TODO: finalize the command
+    return generalRequestWrapper(req, res, next, () => {
         // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId, subsetId } = parseParams(req);
+        const { subset } = parseBody(req);
         // assign the command
         const cmd = EParentCmd.UPDATE_SUBSET;
         // return the values
-        return { id: datasetId, owner, cmd, content: { subsetId } };
+        return { id: datasetId, owner, cmd, content: { subsetId, subset } };
     });
 };
 
 // deletes a subset
 export const deleteSubset = (req: Request, res: Response, next: NextFunction) => {
-    return requestWrapper(req, res, next, () => {
-        // TODO: finalize the command
+    return generalRequestWrapper(req, res, next, () => {
         // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);

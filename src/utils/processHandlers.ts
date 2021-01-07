@@ -18,13 +18,14 @@ import { ServerError } from "./ErrorDefs";
 
 // import models
 import DatasetModel from "../models/dataset.model";
+import { removeFile, removeFolder } from "./FileSystem";
 
 // //////////////////////////////////////////////
 // Initialize instances
 // //////////////////////////////////////////////
 
 // initialize the model object
-const model = new DatasetModel("im_datasets");
+const datasetModel = new DatasetModel("infominer.datasets");
 
 // initialize the process control
 const processControl = new ProcessControl({
@@ -40,21 +41,13 @@ const processControl = new ProcessControl({
 // send a message to the child process
 const _initProcess = async (childId: number, owner: string, callback: TGeneralCallback<any>) => {
     try {
-        // TODO: get the dataset metadata used to open it
-        // const datasets = await model.getDatasets({ id: childId, owner });
-        // if (datasets.length !== 1) {
-        //     throw new Error(`Multiple or none results found: ${datasets.length}`);
+        // // TODO: get the dataset metadata used to open it
+        // const records = await datasetModel.getDatasets({ id: childId, owner });
+        // if (records.length !== 1) {
+        //     throw new Error(`Multiple or none results found: ${records.length}`);
         // }
-        // get the dataset parameters
-        // const [
-        //     {
-        //         label,
-        //         description,
-        //         created,
-        //         dbpath: dbPath,
-        //         parameters: { fields, stopwords },
-        //     },
-        // ] = datasets;
+        // // get the dataset parameters
+        // const [{ name, description, created, dbpath, parameters, file }] = records;
 
         const params = {
             cmd: EParentCmd.INIT,
@@ -83,7 +76,6 @@ const sendToProcess = (
     };
 
     if (processControl.doesChildExist(childId)) {
-        // send the request to the child
         sendMessage();
     } else {
         _initProcess(childId, owner, sendMessage).catch(console.log);
@@ -97,7 +89,7 @@ const generalUserResponse = (_req: Request, res: Response, next: NextFunction) =
 ) => (error ? next(new ServerError(error.message)) : res.status(200).json(results));
 
 // creates a general request wrapper
-function requestWrapper(
+function generalRequestWrapper(
     req: Request,
     res: Response,
     next: NextFunction,
@@ -108,4 +100,34 @@ function requestWrapper(
     sendToProcess(id, owner, message, generalUserResponse(req, res, next));
 }
 
-export { processControl, requestWrapper };
+// create the dataset process
+function createDatasetProcess(
+    childId: number,
+    message: IProcessSendParams,
+    callback: TGeneralCallback<any>
+) {
+    processControl.createChild(childId);
+    processControl.sendAndWait(childId, message, callback);
+}
+
+// delete the dataset process
+async function deleteDatasetProcess(record: any) {
+    // get information required to delete the dataset
+    const {
+        id,
+        dbpath,
+        file: { filepath },
+    } = record;
+
+    await datasetModel.deleteDataset({ id });
+    if (processControl.doesChildExist(id)) {
+        processControl.sendAndWait(id, { cmd: EParentCmd.SHUTDOWN }, () => {
+            removeFolder(dbpath);
+        });
+    } else {
+        removeFolder(dbpath);
+        removeFile(filepath);
+    }
+}
+
+export { processControl, generalRequestWrapper, createDatasetProcess, deleteDatasetProcess };

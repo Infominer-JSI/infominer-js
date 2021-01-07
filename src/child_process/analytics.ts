@@ -48,6 +48,9 @@ function messageHandler(message: IParentMsg) {
         case EParentCmd.SHUTDOWN:
             shutdownProcess(message);
             break;
+        case EParentCmd.CREATE_DATASET:
+            createDataset(message);
+            break;
         default:
             unknownCommand(message);
             break;
@@ -65,17 +68,17 @@ async function _functionWrapper(message: IParentMsg, callback: TMessageProcess) 
     try {
         // do something with the body and return the output
         const results = await callback(body);
-        processSend({ requestId, results });
+        return processSend({ requestId, results });
     } catch (error) {
         // send the error message back to the parent
-        processSend({ requestId, error: error.message });
+        return processSend({ requestId, error: error.message });
     }
 }
 
-// open the dataset
+// initialize the process
 function initialize(message: IParentMsg) {
     _functionWrapper(message, () => ({
-        message: "Dataset initialized",
+        message: "Process initialized",
     }));
 }
 
@@ -83,11 +86,10 @@ function initialize(message: IParentMsg) {
 async function shutdownProcess(message: IParentMsg) {
     await _functionWrapper(message, () => {
         // get the databse path and close the database
-        const dbPath = database ? database.close() : null; // replace with this database.getDbPath()
         if (database) {
             database.close();
         }
-        return dbPath;
+        return {};
     });
     // clear the interval and exit the child process
     clearInterval(interval);
@@ -95,9 +97,16 @@ async function shutdownProcess(message: IParentMsg) {
     process.exit(0);
 }
 
+// creates the dataset
+function createDataset(message: IParentMsg) {
+    _functionWrapper(message, () => ({
+        message: "Dataset created",
+    }));
+}
+
 // handle unknown commands
 function unknownCommand(message: IParentMsg) {
-    _functionWrapper(message, () => ({
-        message: `unknown command: ${message.body.cmd}`,
-    }));
+    const { requestId, body } = message;
+    // send the error message back to the parent
+    processSend({ requestId, error: `unknown command: ${body.cmd}` });
 }

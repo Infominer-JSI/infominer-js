@@ -9,7 +9,7 @@ import { Request, Response, NextFunction } from "express";
 import { EParentCmd } from "../../interfaces";
 
 // import utils
-import { requestWrapper } from "../../utils/processHandlers";
+import { generalRequestWrapper } from "../../utils/processHandlers";
 import { parseParams, parseBody, parseCredentials } from "../../utils/requestParsers";
 
 // //////////////////////////////////////////////
@@ -18,8 +18,7 @@ import { parseParams, parseBody, parseCredentials } from "../../utils/requestPar
 
 // gets the methods
 export const getMethods = (req: Request, res: Response, next: NextFunction) => {
-    return requestWrapper(req, res, next, () => {
-        // TODO: finalize the command
+    return generalRequestWrapper(req, res, next, () => {
         // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
@@ -33,8 +32,7 @@ export const getMethods = (req: Request, res: Response, next: NextFunction) => {
 
 // creates a method
 export const createMethod = (req: Request, res: Response, next: NextFunction) => {
-    return requestWrapper(req, res, next, () => {
-        // TODO: finalize the command
+    return generalRequestWrapper(req, res, next, () => {
         // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
@@ -49,8 +47,7 @@ export const createMethod = (req: Request, res: Response, next: NextFunction) =>
 
 // checks the method status
 export const checkMethodStatus = (req: Request, res: Response, next: NextFunction) => {
-    return requestWrapper(req, res, next, () => {
-        // TODO: finalize the command
+    return generalRequestWrapper(req, res, next, () => {
         // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
@@ -64,8 +61,7 @@ export const checkMethodStatus = (req: Request, res: Response, next: NextFunctio
 
 // gets the method
 export const getMethod = (req: Request, res: Response, next: NextFunction) => {
-    return requestWrapper(req, res, next, () => {
-        // TODO: finalize the command
+    return generalRequestWrapper(req, res, next, () => {
         // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
@@ -79,23 +75,22 @@ export const getMethod = (req: Request, res: Response, next: NextFunction) => {
 
 // updates the method
 export const updateMethod = (req: Request, res: Response, next: NextFunction) => {
-    return requestWrapper(req, res, next, () => {
-        // TODO: finalize the command
+    return generalRequestWrapper(req, res, next, () => {
         // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId, methodId } = parseParams(req);
+        const { method } = parseBody(req);
         // assign the command
         const cmd = EParentCmd.UPDATE_METHOD;
         // return the values
-        return { id: datasetId, owner, cmd, content: { methodId } };
+        return { id: datasetId, owner, cmd, content: { methodId, method } };
     });
 };
 
 // deletes the method
 export const deleteMethod = (req: Request, res: Response, next: NextFunction) => {
-    return requestWrapper(req, res, next, () => {
-        // TODO: finalize the command
+    return generalRequestWrapper(req, res, next, () => {
         // TODO: check request structure
         // parse the request
         const { owner } = parseCredentials(req);
