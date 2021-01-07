@@ -84,10 +84,10 @@ one can set up and install the [postgres database][postgres-manual].
     To initialize the table one must simply run the following command:
 
     ```bash
-    node ./load/execute --files=update.v1.sql
+    node ./load/upgrade
     ```
 
-    This will create the required infominer tables. The table definitions are defined in files found in 
+    This will create the required infominer tables. The table definitions are defined in files found in
     the [./load/postgres][postgres-defs] folder.
 
 ## Start
@@ -95,7 +95,7 @@ one can set up and install the [postgres database][postgres-manual].
 To start the project run the following command:
 
 ```bash
-npm start
+npm run start:dev
 ```
 
 ## Build
@@ -105,7 +105,6 @@ To build the project run the following command:
 ```bash
 npm run build
 ```
-
 
 [postgres-docker]: https://hub.docker.com/_/postgres
 [postgres-manual]: https://www.postgresql.org/download/
