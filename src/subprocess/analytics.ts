@@ -13,7 +13,7 @@ import BaseDataset from "./components/baseDataset";
 const interval = setInterval(() => {}, 10 * 1000);
 
 // TODO: baseDataset placeholder
-let baseDataset: BaseDataset | null = null;
+const baseDataset: BaseDataset | null = null;
 
 //////////////////////////////////////////////////////
 // Set parent-child communcation
