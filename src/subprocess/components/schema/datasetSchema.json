@@ -1,0 +1,39 @@
+[
+    {
+        "name": "Dataset",
+        "fields": null,
+        "keys": null,
+        "joins": [
+            { "name": "inSubsets", "type": "index", "store": "Subsets", "inverse": "hasElements" }
+        ]
+    },
+    {
+        "name": "Subsets",
+        "fields": [
+            { "name": "label", "type": "string" },
+            { "name": "description", "type": "string", "null": true },
+            { "name": "metadata", "type": "json", "null": true },
+            { "name": "modified", "type": "bool", "default": false },
+            { "name": "deleted", "type": "bool", "default": false }
+        ],
+        "joins": [
+            { "name": "hasElements", "type": "index", "store": "Dataset", "inverse": "inSubsets" },
+            { "name": "resultedIn", "type": "field", "store": "Methods", "inverse": "produced" },
+            { "name": "usedBy", "type": "index", "store": "Methods", "inverse": "appliedOn" }
+        ]
+    },
+    {
+        "name": "Methods",
+        "fields": [
+            { "name": "type", "type": "string" },
+            { "name": "parameters", "type": "json" },
+            { "name": "result", "type": "json", "null": true },
+            { "name": "modified", "type": "bool", "default": false },
+            { "name": "deleted", "type": "bool", "default": false }
+        ],
+        "joins": [
+            { "name": "produced", "type": "index", "store": "Subsets", "inverse": "resultedIn" },
+            { "name": "appliedOn", "type": "index", "store": "Subsets", "inverse": "usedBy" }
+        ]
+    }
+]

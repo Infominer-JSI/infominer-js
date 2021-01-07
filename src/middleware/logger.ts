@@ -11,7 +11,7 @@ import DailyRotateFile from "winston-daily-rotate-file";
 import morgan from "morgan";
 
 // import utils
-import { createDirectoryPath } from "../utils/FileSystem";
+import { createDirectory } from "../utils/FileSystem";
 
 // import configurations
 import config from "../config/config";
@@ -25,7 +25,7 @@ import { Request } from "express";
 
 // create the temporary folder
 const LOGS_PATH = path.join(__dirname, "..", "..", "logs");
-createDirectoryPath(LOGS_PATH);
+createDirectory(LOGS_PATH);
 
 // create a daily rotation transport
 const createDailyTransport = (filename: string, dirname: string, level: string) => {

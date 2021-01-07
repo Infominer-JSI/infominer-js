@@ -19,13 +19,8 @@ import {
 } from "../../utils/processHandlers";
 import { ServerError, BadRequest } from "../../utils/ErrorDefs";
 import { removeFile, createDatabaseDirectoryPath } from "../../utils/FileSystem";
-import {
-    parseBody,
-    parseParams,
-    parseCredentials,
-    parseDelimiter,
-    parseColumns,
-} from "../../utils/requestParsers";
+import { parseBody, parseParams, parseCredentials } from "../../utils/requestParsers";
+import { parseDelimiter, parseColumns } from "../../utils/fileParsers";
 
 // import models
 import DatasetModel from "../../models/dataset.model";

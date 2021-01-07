@@ -4,7 +4,7 @@ console.log("Start child process, id=", process.pid);
 import { EParentCmd, IChildMsg, IParentMsg, TMessageProcess } from "../interfaces";
 
 // import modules
-import * as qm from "qminer";
+import BaseDataset from "./components/baseDataset";
 
 //////////////////////////////////////////////////////
 // Set infinite interval and parameters
@@ -12,8 +12,8 @@ import * as qm from "qminer";
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 const interval = setInterval(() => {}, 10 * 1000);
 
-// TODO: database placeholder
-const database: qm.Base | null = null;
+// TODO: baseDataset placeholder
+let baseDataset: BaseDataset | null = null;
 
 //////////////////////////////////////////////////////
 // Set parent-child communcation
@@ -67,7 +67,7 @@ async function _functionWrapper(message: IParentMsg, callback: TMessageProcess) 
     const { requestId, body } = message;
     try {
         // do something with the body and return the output
-        const results = await callback(body);
+        const results = await callback(body.content);
         return processSend({ requestId, results });
     } catch (error) {
         // send the error message back to the parent
@@ -86,9 +86,7 @@ function initialize(message: IParentMsg) {
 async function shutdownProcess(message: IParentMsg) {
     await _functionWrapper(message, () => {
         // get the databse path and close the database
-        if (database) {
-            database.close();
-        }
+        baseDataset?.close();
         return {};
     });
     // clear the interval and exit the child process
@@ -98,10 +96,14 @@ async function shutdownProcess(message: IParentMsg) {
 }
 
 // creates the dataset
-function createDataset(message: IParentMsg) {
-    _functionWrapper(message, () => ({
-        message: "Dataset created",
-    }));
+async function createDataset(message: IParentMsg) {
+    await _functionWrapper(message, (content) => {
+        // create the base dataset
+        // TODO: parse the body
+        console.log(content);
+        //baseDataset = new BaseDataset(body);
+        return { message: "Dataset created" };
+    });
 }
 
 // handle unknown commands
