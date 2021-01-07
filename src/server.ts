@@ -111,7 +111,7 @@ app.use("/api/v1/", routes);
 
 // set all other routes not available
 app.use("*", (req, _res, next) => {
-    return next(new RouteNotFound(`Route not found: ${req.originalUrl}`));
+    return next(new RouteNotFound(`Route Not Found`));
 });
 
 // handle errors
