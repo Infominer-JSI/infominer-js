@@ -58,7 +58,8 @@ function messageHandler(message: IParentMsg) {
 }
 
 //////////////////////////////////////////////////////
-// Define helper functions
+// Helper functions
+//////////////////////////////////////////////////////
 
 // the message processing function wrapper
 // the callback is the function that handles with the messages body and returns
@@ -74,6 +75,10 @@ async function _functionWrapper(message: IParentMsg, callback: TMessageProcess) 
         return processSend({ requestId, error: error.message });
     }
 }
+
+//////////////////////////////////////////////////////
+// Basic request handling
+//////////////////////////////////////////////////////
 
 // initialize the process
 function initialize(message: IParentMsg) {
@@ -95,6 +100,17 @@ async function shutdownProcess(message: IParentMsg) {
     process.exit(0);
 }
 
+// handle unknown commands
+function unknownCommand(message: IParentMsg) {
+    const { requestId, body } = message;
+    // send the error message back to the parent
+    processSend({ requestId, error: `unknown command: ${body.cmd}` });
+}
+
+//////////////////////////////////////////////////////
+// Dataset request handling
+//////////////////////////////////////////////////////
+
 // creates the dataset
 async function createDataset(message: IParentMsg) {
     await _functionWrapper(message, (content) => {
@@ -104,11 +120,4 @@ async function createDataset(message: IParentMsg) {
         //baseDataset = new BaseDataset(body);
         return { message: "Dataset created" };
     });
-}
-
-// handle unknown commands
-function unknownCommand(message: IParentMsg) {
-    const { requestId, body } = message;
-    // send the error message back to the parent
-    processSend({ requestId, error: `unknown command: ${body.cmd}` });
 }
