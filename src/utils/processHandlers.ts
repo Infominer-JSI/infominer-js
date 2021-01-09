@@ -43,9 +43,12 @@ const _initProcess = async (childId: number, owner: string, callback: TGeneralCa
     try {
         // TODO: get the dataset metadata used to open it
         const records = await datasetModel.getDatasets({ id: childId, owner });
-        if (records.length !== 1) {
-            throw new BadRequest(`Bad Request`);
+        if (records.length > 1) {
+            throw new ServerError(`more than one record found`);
+        } else if (records.length === 0) {
+            throw new BadRequest(`no records found`);
         }
+
         // get the dataset parameters
         // const [{ name, description, created, dbpath, parameters, file }] = records;
 

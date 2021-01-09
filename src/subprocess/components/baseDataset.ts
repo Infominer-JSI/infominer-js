@@ -75,8 +75,7 @@ export default class BaseDataset {
             // open an existing QMiner base
             this.base = new qm.Base({ mode, dbPath });
         } else {
-            // TODO: handle error
-            throw Error("Bad Request");
+            throw Error("invalid base mode");
         }
     }
 

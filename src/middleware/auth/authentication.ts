@@ -85,7 +85,7 @@ export default function (app: Express, passport: PassportStatic, dev_mode?: bool
         app.all("/api/*", (req: Request, _res: Response, next: NextFunction) => {
             // check if the user is authenticated or not
             return !req.isAuthenticated()
-                ? next(new UserNotAuthorized("User not authenticated"))
+                ? next(new UserNotAuthorized("user not authenticated"))
                 : next();
         });
     }

@@ -16,12 +16,12 @@ const handleErrors = (error: Error, req: Request, res: Response, _next: NextFunc
     if (error instanceof GeneralError) {
         return res.status(error.statusCode).json({
             status: "error",
-            message: error.message,
+            message: error.output,
         });
     }
     return res.status(500).json({
         status: "error",
-        message: "Error on server side",
+        message: "Server Side Error",
     });
 };
 
