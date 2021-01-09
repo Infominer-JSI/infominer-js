@@ -29,7 +29,7 @@ const datasetModel = new DatasetModel("infominer.datasets");
 
 // initialize the process control
 const processControl = new ProcessControl({
-    processPath: path.join(__dirname, "../subprocess/analytics.ts"),
+    processPath: path.join(__dirname, "../subprocess/analytics"),
     cleanupInterval: 30 * 60 * 1000, // 30 minutes
     processMaxAge: 2 * 60 * 60 * 1000, // 2 hours
 });

@@ -73,7 +73,7 @@ export function copyFolder(source: string, destination: string) {
     }
     // check if destination exists
     if (!fs.existsSync(destination)) {
-        createDirectoryPath(destination);
+        createDirectory(destination);
     }
     // get all file names in the directory and iterate through them
     const files = fs.readdirSync(source);
@@ -104,7 +104,7 @@ export function createFolder(dirPath: string) {
 }
 
 // creates all directories in path
-export function createDirectoryPath(dirPath: string) {
+export function createDirectory(dirPath: string) {
     // resolve path
     const resolvedPath = path.resolve(dirPath);
     // split to get it's directories

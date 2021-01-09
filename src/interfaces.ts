@@ -19,6 +19,12 @@ export enum EDatasetStatus {
     FINISHED = "FINISHED",
 }
 
+export interface IField {
+    name: string;
+    type: string;
+    included: boolean;
+}
+
 //////////////////////////////////////////////////////
 // Child process handling related interfaces
 //////////////////////////////////////////////////////
@@ -86,4 +92,15 @@ export interface IProcessControlParams {
     processPath: string;
     processMaxAge: number;
     cleanupInterval: number;
+}
+
+//////////////////////////////////////////////////////
+// Model interfaces
+//////////////////////////////////////////////////////
+
+export interface IModel {
+    run(): void;
+    update(): void;
+    save(fin: any): void;
+    load(fin: any): void;
 }

@@ -1,9 +1,6 @@
 // import server modules
 import express from "express";
-import favicon from "serve-favicon";
 import passport from "passport";
-
-import path from "path";
 
 // import parsing modules
 import bodyParser from "body-parser";
@@ -80,13 +77,6 @@ app.use((req, res, next) => {
 });
 
 // //////////////////////////////////////////////
-// Add public folder
-// //////////////////////////////////////////////
-
-// add the favicon
-app.use(favicon(path.join(__dirname, "public", "favicon.ico")));
-
-// //////////////////////////////////////////////
 // Set authentication
 // //////////////////////////////////////////////
 
@@ -110,7 +100,7 @@ import routes from "./routes/v1/routes";
 app.use("/api/v1/", routes);
 
 // set all other routes not available
-app.use("*", (req, _res, next) => {
+app.use("*", (_req, _res, next) => {
     return next(new RouteNotFound(`Route Not Found`));
 });
 
