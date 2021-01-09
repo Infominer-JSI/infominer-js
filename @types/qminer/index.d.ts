@@ -54,7 +54,10 @@ declare module "qminer" {
         map(callback: any): any[];
         newRecord(obj: any): Record;
         newRecordSet(idVec: la.IntVector): RecordSet;
-        push(rec: any, triggerEvents?: boolean = true): number;
+        push(
+            rec: { [key: string]: number | number[] | string | string[] | null },
+            triggerEvents?: boolean = true
+        ): number;
         recordByName(recName: string): Record | null;
         resetStreamAggreates(): void;
         sample(sampleSize: number): RecordSet;
@@ -71,7 +74,11 @@ declare module "qminer" {
         deleteRecords(rs: RecordSet): RecordSet;
         each(callback: any): RecordSet;
         filter(callback: any): RecordSet;
-        filterByField(fieldName: string, minVal: string | number, maxVal: number): RecordSet;
+        filterByField(
+            fieldName: string,
+            minVal: string | number | boolean,
+            maxVal?: number
+        ): RecordSet;
         filterByFq(minFq?: number, maxFq?: number): RecordSet;
         filterById(minId?: number, maxId?: number): RecordSet;
         getMatrix(fieldName: string): la.Matrix | la.SparseMatrix;
@@ -91,6 +98,7 @@ declare module "qminer" {
         split(callback: number): RecordSet[];
         toJSON(): { [key: any]: any };
         trunc(limit_num: number, offset_num?: number): RecordSet;
+        [key: number]: Record;
     }
 
     export class Record {
@@ -105,7 +113,8 @@ declare module "qminer" {
             joinRecords?: boolean = false,
             joinRecordFields?: boolean = false,
             sysFields?: boolean = true
-        ): { [key: any]: any };
+        ): { [key: string]: any };
+        [key: string]: any;
     }
 
     export class RecordVector {
@@ -1873,13 +1882,8 @@ declare module "qminer" {
     // Shared component definitions
     /////////////////////////////////////////////
 
-    enum BaseModes {
-        "createClean",
-        "open",
-    }
-
     export interface BaseParams {
-        mode: BaseModes;
+        mode: string;
         dbPath: string;
         schema?: any;
     }
