@@ -33,10 +33,7 @@ export default class BaseDataset {
     // prepare base schema
     _prepareSchema(fields: IField[]) {
         // read the file and parse it as a json
-        const file = fs.readFileSync(
-            path.resolve(__dirname, "schema", "datasetSchema.json"),
-            "utf8"
-        );
+        const file = fs.readFileSync(path.resolve(__dirname, "schema", "dataset"), "utf8");
         const schema = JSON.parse(file);
 
         // assign the fields
