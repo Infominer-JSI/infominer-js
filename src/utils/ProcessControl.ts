@@ -152,12 +152,10 @@ export default class ProcessControl {
         return new Promise((resolve, reject) => {
             console.log("Running stop process tasks for child id=", childId);
             try {
-                console.log("Send request");
                 this.sendAndWait(childId, { cmd: EParentCmd.SHUTDOWN }, (error) =>
                     error ? reject(error) : resolve(null)
                 );
             } catch (xerror) {
-                console.log("Child already closed");
                 return reject(xerror);
             }
         });
