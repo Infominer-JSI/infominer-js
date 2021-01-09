@@ -9,7 +9,7 @@ import { Request, Response, NextFunction } from "express";
 import { EParentCmd, EDatasetStatus } from "../../interfaces";
 
 // import defaults
-import { LABEL2ID } from "../../config/defaults";
+import { LABEL2ID } from "../../config/static";
 
 // import utils
 import {
@@ -50,6 +50,7 @@ export const getDatasets = async (req: Request, res: Response, next: NextFunctio
         }));
         return res.status(200).json({ datasets });
     } catch (error) {
+        //TODO: log error
         return next(new ServerError("Server Side Error"));
     }
 };
@@ -64,6 +65,7 @@ export const uploadDataset = async (req: Request, res: Response, next: NextFunct
         // get the file delimiter
         const { delimiter, error: xerror } = await parseDelimiter(filepath);
         if (xerror) {
+            //TODO: log error
             // delete the file
             removeFile(filepath);
             return next(new BadRequest("Bad Request"));
@@ -72,6 +74,7 @@ export const uploadDataset = async (req: Request, res: Response, next: NextFunct
         // get the column fields
         const { fields, error: yerror } = await parseColumns(filepath, delimiter as string);
         if (yerror) {
+            //TODO: log error
             // delete the file
             removeFile(filepath);
             return next(new BadRequest("Bad Request"));
@@ -99,6 +102,7 @@ export const uploadDataset = async (req: Request, res: Response, next: NextFunct
             },
         });
     } catch (error) {
+        //TODO: log error
         // delete the file
         removeFile(filepath);
         return next(new ServerError("Server Side Error"));
@@ -118,6 +122,14 @@ export const createDataset = async (req: Request, res: Response, next: NextFunct
 
         // create the database path
         const dbpath = createDatabaseDirectoryPath(owner);
+
+        const dataset = await datasetModel.getDatasets({ id: datasetId, owner });
+        if (dataset.length === 0 || dataset[0].status !== EDatasetStatus.IN_QUEUE) {
+            //TODO: log error
+            // return the bad request
+            return next(new BadRequest("Bad Request"));
+        }
+
         // update the dataset record
         const record = await datasetModel.updateDataset(
             {
@@ -130,6 +142,7 @@ export const createDataset = async (req: Request, res: Response, next: NextFunct
             { id: datasetId, owner }
         );
         if (record.length == 0) {
+            //TODO: log error
             // return the bad request
             return next(new BadRequest("Bad Request"));
         }
@@ -151,13 +164,15 @@ export const createDataset = async (req: Request, res: Response, next: NextFunct
                     fields,
                 },
                 dataset: {
-                    id: datasetId,
-                    name,
-                    description,
-                    creation_date: record[0].creation_date,
                     mode: "createClean",
                     dbpath,
-                    parameters,
+                    metadata: {
+                        id: datasetId,
+                        name,
+                        description,
+                        creation_date: record[0].creation_date,
+                    },
+                    preprocessing: parameters,
                 },
             },
         };
@@ -165,6 +180,7 @@ export const createDataset = async (req: Request, res: Response, next: NextFunct
         // send the message to the process
         return createDatasetProcess(datasetId, message, async (error) => {
             if (error) {
+                //TODO: log error
                 // delete the dataset instance
                 await datasetModel.deleteDataset({ id: datasetId, owner });
             } else {
@@ -186,6 +202,7 @@ export const createDataset = async (req: Request, res: Response, next: NextFunct
             removeFile(filepath);
         });
     } catch (error) {
+        //TODO: log error
         return next(new ServerError("Server Side Error"));
     }
 };
@@ -213,6 +230,7 @@ export const checkDatasetStatus = async (req: Request, res: Response, next: Next
             status: records[0].status,
         });
     } catch (error) {
+        //TODO: log error
         return next(new ServerError("Server Side Error"));
     }
 };

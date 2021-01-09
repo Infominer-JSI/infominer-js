@@ -1,7 +1,9 @@
-export default class SubsetManager {
-    private formatter: any;
+import { IFormatter } from "../../interfaces";
 
-    constructor(formatter: any) {
+export default class SubsetManager {
+    private formatter: IFormatter;
+
+    constructor(formatter: IFormatter) {
         this.formatter = formatter;
     }
 }

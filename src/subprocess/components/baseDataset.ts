@@ -1,39 +1,92 @@
-import { IField } from "../../interfaces";
+import {
+    IField,
+    IBaseMode,
+    IBaseDatasetParams,
+    IBaseDatasetField,
+    IFileMetadata,
+} from "../../interfaces";
+
+// static values
+import { ID2LABEL, LABEL2ID, ID2TYPE, TYPE2ID } from "../../config/static";
 
 import qm from "qminer";
 import fs from "fs";
 import path from "path";
+import parse from "csv-parse";
+// directory creation functions
 import { createDirectory } from "../../utils/FileSystem";
-import { LABEL2ID, ID2TYPE } from "../../config/defaults";
+
+// import formatter
+import formatter from "./formatter";
+
+// import subset and model managers
+import SubsetManager from "./subsetManager";
+import ModelManager from "./modelManager";
+
+// initialize subset and model managers
+const subsetManager = new SubsetManager(formatter);
+const modelManager = new ModelManager(formatter);
 
 export default class BaseDataset {
-    private stopwords: string[];
-    private params: any;
     private base: qm.Base | undefined;
+    private dbpath: string;
+    private fields: IBaseDatasetField[];
+    private preprocessing: IBaseDatasetParams["preprocessing"];
 
-    constructor(params: any) {
-        this.stopwords = [];
-        this.params = params;
-        this._loadBase(this.params.fields);
+    public metadata: IBaseDatasetParams["metadata"];
+
+    constructor(params: IBaseDatasetParams) {
+        // initialize all required parameters
+        this.dbpath = params.dbpath;
+        // load the database
+        this._loadBase(params.mode, params.fields);
+        // load the field metadata
+        this.fields = this._getFieldMetadata();
+        // store preprocessing information
+        this.preprocessing = {
+            stopwords: {
+                language: "en",
+                words: [""],
+            },
+            ...params.preprocessing,
+        };
+        // contains database metadata
+        this.metadata = params.metadata;
     }
 
-    // load base
-    _loadBase(fields: IField[]) {
-        if (this.params.mode === "createClean") {
-            createDirectory(this.params.dbpath);
-            const schema = this._prepareSchema(fields);
-            this.base = new qm.Base({ mode: this.params.mode, dbPath: this.params.dbpath, schema });
-        } else if (this.params.mode === "open") {
-            this.base = new qm.Base({ mode: this.params.mode, dbPath: this.params.dbpath });
+    /////////////////////////////////////////////
+    // BASE PREPARATION
+    /////////////////////////////////////////////
+
+    /**
+     * Loads the base.
+     * @param mode - The mode in which the base is created.
+     * @param fields - The user defined fields.
+     */
+    _loadBase(mode: IBaseMode, fields?: IField[]) {
+        // the base is held in its `db` folder
+        const dbPath = path.resolve(this.dbpath, "db");
+        if (mode === IBaseMode.CREATE_CLEAN) {
+            // create a new QMiner base
+            createDirectory(dbPath);
+            const schema = this._prepareSchema(fields as IField[]);
+            this.base = new qm.Base({ mode, dbPath, schema });
+        } else if (mode === IBaseMode.OPEN) {
+            // open an existing QMiner base
+            this.base = new qm.Base({ mode, dbPath });
         } else {
             // TODO: handle error
+            throw Error("Bad Request");
         }
     }
 
-    // prepare base schema
+    /**
+     * Prepares base schema.
+     * @param fields - The user defined fields.
+     */
     _prepareSchema(fields: IField[]) {
         // read the file and parse it as a json
-        const file = fs.readFileSync(path.resolve(__dirname, "schema", "dataset"), "utf8");
+        const file = fs.readFileSync(path.resolve(__dirname, "schema", "dataset.json"), "utf8");
         const schema = JSON.parse(file);
 
         // assign the fields
@@ -64,9 +117,101 @@ export default class BaseDataset {
         return schema;
     }
 
-    // prepares the record from the row
-    _prepareRecord(values: string[], fields: IField[]) {
-        const record: { [key: string]: string | number | string[] | null } = {};
+    /** Prepares the base field metadata. */
+    _getFieldMetadata() {
+        // get the field metadata
+        const fields = this.base?.store("Dataset").fields as IBaseDatasetField[];
+        fields.forEach((field) => {
+            switch (ID2LABEL[TYPE2ID[field.type]]) {
+                case "number":
+                    field.aggregate = "histogram";
+                    break;
+                case "text":
+                    field.aggregate = "keywords";
+                    break;
+                case "category":
+                    field.aggregate = "hierarchy";
+                    break;
+                case "datetime":
+                    field.aggregate = "timeline";
+                    break;
+                default:
+                    break;
+            }
+        });
+        return fields;
+    }
+
+    /** Closes the base. */
+    close() {
+        this.base?.close();
+    }
+
+    /////////////////////////////////////////////
+    // RECORD PREPARATION
+    /////////////////////////////////////////////
+
+    /**
+     * Populates the base with the examples in the file.
+     * @param file - The object containing the dataset metadata.
+     */
+    populateBase(file: IFileMetadata) {
+        return new Promise<any>((resolve, reject) => {
+            const subset = {
+                label: "root",
+                description: "The root subset. Contains all records of the dataset.",
+            };
+            // TODO: create the subset
+
+            // prepare the parser
+            const parser = parse({
+                delimiter: file.delimiter,
+                trim: true,
+                skip_lines_with_error: true,
+            });
+            // handle each readable row
+            parser.on("readable", () => {
+                let record;
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                while ((record = parser.read())) {
+                    // prepare and push record to dataset
+                    const rec = this._formatRecord(record, file.fields);
+                    const recId = this.base?.store("Dataset").push(rec);
+                    // TODO: join the record with the root subset
+                }
+            });
+            // handle parser errors
+            parser.on("error", (error) => {
+                return reject(error);
+            });
+            // handle on parser end
+            parser.on("end", () => {
+                // TODO: update subset metadata
+                return resolve({});
+            });
+
+            // read file and skip first line
+            const fileIn = qm.fs.openRead(file.filepath);
+            fileIn.readLine();
+
+            // go through the whole file and parse it
+            while (!fileIn.eof) {
+                // add end-of-line tag for the parser
+                const line = fileIn.readLine() + "\n";
+                parser.write(line);
+            }
+            // close the parser
+            parser.end();
+        });
+    }
+
+    /**
+     * Formats the record for the base.
+     * @param values - The record values.
+     * @param fields - The base fields.
+     */
+    _formatRecord(values: string[], fields: IField[]) {
+        const record: { [key: string]: number | number[] | string | string[] | null } = {};
         for (let i = 0; i < fields.length; i++) {
             const value = values[i];
             const field = fields[i];
@@ -77,24 +222,33 @@ export default class BaseDataset {
         return record;
     }
 
-    // parse field
+    /**
+     * Parses the value based on its type.
+     * @param value - The record value.
+     * @param type - The value type.
+     */
     _parseValue(value: string, type: string) {
+        // handle empty values
+        if (this._isValueEmpty(value)) {
+            return null;
+        }
+        // otherwise parse the value based on its type
         switch (type) {
             case "text":
-                return value && value !== "" ? value : null;
+                return value;
             case "number":
-                return value && value !== "" ? parseFloat(value) : null;
+                return parseFloat(value);
             case "datetime":
-                return value && value !== "" ? new Date(value).toISOString() : null;
+                return new Date(value).toISOString();
             case "category":
-                return value && value !== "" ? value.split(/[\\/]/g) : null;
+                return value.split(/[\\/]/g);
             default:
                 throw new Error('Type is not "text", "number", "datetime" or "category"');
         }
     }
 
-    // close the database
-    close() {
-        this.base?.close();
+    /** Checks if the value is empty. */
+    _isValueEmpty(value: string) {
+        return value === null || value === "";
     }
 }

@@ -26,7 +26,7 @@ export default class DatasetModel {
         // construct the SQL command and get the results
         const command = `SELECT * FROM ${this._tableName} ${
             SQLWhere.length ? `WHERE ${SQLWhere.join(" AND ")}` : ""
-        };`;
+        } ORDER BY id DESC;`;
         const results = await query(command, params);
         return results.rows;
     }

@@ -49,7 +49,13 @@ export default class ProcessControl {
     // initialize the child process
     createChild(childId: number) {
         // create the child process
-        const child = fork(this._processPath, [], { silent: false });
+        const child = fork(this._processPath, [], {
+            silent: false,
+            // development mode: used with start:dev
+            ...(process.env.TS_NODE_DEV && {
+                execArgv: ["-r", "ts-node/register"],
+            }),
+        });
         this._childH.set(childId, { child, connected: true, lastCall: 0 });
 
         child.on("message", (message: IChildMsg) => {

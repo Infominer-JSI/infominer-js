@@ -1,3 +1,4 @@
+import qm from "qminer";
 import { ChildProcess } from "child_process";
 
 //////////////////////////////////////////////////////
@@ -23,6 +24,7 @@ export interface IField {
     name: string;
     type: string;
     included: boolean;
+    defaultShow?: boolean;
 }
 
 //////////////////////////////////////////////////////
@@ -98,9 +100,80 @@ export interface IProcessControlParams {
 // Model interfaces
 //////////////////////////////////////////////////////
 
+export enum IBaseMode {
+    CREATE_CLEAN = "createClean",
+    OPEN = "open",
+}
+
+export interface IBaseDatasetParams {
+    mode: IBaseMode;
+    dbpath: string;
+    fields: IField[];
+    metadata: {
+        id: number;
+        name: string;
+        description: string;
+        creation_date: string;
+    };
+    preprocessing?: {
+        stopwords?: {
+            language?: string;
+            words?: string[];
+        };
+    };
+}
+
+export interface IFileMetadata {
+    filepath: string;
+    delimiter: string;
+    fields: IField[];
+}
+
+export interface IBaseDatasetField extends qm.IField {
+    showInTable?: boolean;
+    showInGraph?: boolean;
+    aggregate?: string;
+}
+
 export interface IModel {
     run(): void;
     update(): void;
     save(fin: any): void;
     load(fin: any): void;
+}
+
+export interface IFormatter {
+    subset: (
+        rec: qm.Record
+    ) => {
+        id: number;
+        type: string;
+        label: string;
+        description: string | null;
+        resultedIn: number | null;
+        usedBy: number[] | null;
+        nDocs: number | null;
+        modified: boolean;
+        metadata: { [key: string]: any } | null;
+    };
+    method: (
+        rec: qm.Record
+    ) => {
+        id: number;
+        type: string;
+        method: string;
+        parameters: any;
+        results: any;
+        produced: number[] | null;
+        appliedOn: number[] | null;
+        modified: boolean;
+    };
+    document: (
+        rec: qm.Record
+    ) => {
+        id: number;
+        type: string;
+        subsets: number[] | null;
+        values: { [key: string]: any };
+    };
 }

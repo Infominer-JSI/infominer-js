@@ -6,14 +6,13 @@ import { EParentCmd, IChildMsg, IParentMsg, TMessageProcess } from "../interface
 // import modules
 import BaseDataset from "./components/baseDataset";
 
+// data placeholder
+let baseDataset: BaseDataset | null = null;
 //////////////////////////////////////////////////////
 // Set infinite interval and parameters
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 const interval = setInterval(() => {}, 10 * 1000);
-
-// TODO: baseDataset placeholder
-const baseDataset: BaseDataset | null = null;
 
 //////////////////////////////////////////////////////
 // Set parent-child communcation
@@ -68,7 +67,7 @@ async function _functionWrapper(message: IParentMsg, callback: TMessageProcess) 
     const { requestId, body } = message;
     try {
         // do something with the body and return the output
-        const results = await callback(body.content);
+        const results = await callback(body);
         return processSend({ requestId, results });
     } catch (error) {
         // send the error message back to the parent
@@ -81,8 +80,8 @@ async function _functionWrapper(message: IParentMsg, callback: TMessageProcess) 
 //////////////////////////////////////////////////////
 
 // initialize the process
-function initialize(message: IParentMsg) {
-    _functionWrapper(message, () => ({
+async function initialize(message: IParentMsg) {
+    await _functionWrapper(message, () => ({
         message: "Process initialized",
     }));
 }
@@ -113,11 +112,12 @@ function unknownCommand(message: IParentMsg) {
 
 // creates the dataset
 async function createDataset(message: IParentMsg) {
-    await _functionWrapper(message, (content) => {
+    await _functionWrapper(message, async (body) => {
         // create the base dataset
-        // TODO: parse the body
-        console.log(content);
-        //baseDataset = new BaseDataset(body);
-        return { message: "Dataset created" };
+        const { file, dataset } = body?.content;
+        baseDataset = new BaseDataset({ fields: file.fields, ...dataset });
+        await baseDataset.populateBase(file);
+        // TODO: aggreate the subset
+        return { message: "Dataset created", dataset: baseDataset.metadata };
     });
 }

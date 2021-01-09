@@ -14,7 +14,7 @@ import path from "path";
 
 // import utils
 import ProcessControl from "./ProcessControl";
-import { ServerError } from "./ErrorDefs";
+import { BadRequest, ServerError } from "./ErrorDefs";
 
 // import models
 import DatasetModel from "../models/dataset.model";
@@ -41,12 +41,12 @@ const processControl = new ProcessControl({
 // send a message to the child process
 const _initProcess = async (childId: number, owner: string, callback: TGeneralCallback<any>) => {
     try {
-        // // TODO: get the dataset metadata used to open it
-        // const records = await datasetModel.getDatasets({ id: childId, owner });
-        // if (records.length !== 1) {
-        //     throw new Error(`Multiple or none results found: ${records.length}`);
-        // }
-        // // get the dataset parameters
+        // TODO: get the dataset metadata used to open it
+        const records = await datasetModel.getDatasets({ id: childId, owner });
+        if (records.length !== 1) {
+            throw new BadRequest(`Bad Request`);
+        }
+        // get the dataset parameters
         // const [{ name, description, created, dbpath, parameters, file }] = records;
 
         const params = {
@@ -107,7 +107,13 @@ function createDatasetProcess(
     callback: TGeneralCallback<any>
 ) {
     processControl.createChild(childId);
-    processControl.sendAndWait(childId, message, callback);
+    processControl.sendAndWait(childId, { cmd: EParentCmd.INIT }, (error) => {
+        if (error) {
+            console.log(error);
+            return callback(error);
+        }
+        processControl.sendAndWait(childId, message, callback);
+    });
 }
 
 // delete the dataset process

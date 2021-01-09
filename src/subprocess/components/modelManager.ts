@@ -1,7 +1,9 @@
-export default class ModelManager {
-    private formatter: any;
+import { IFormatter } from "../../interfaces";
 
-    constructor(formatter: any) {
+export default class ModelManager {
+    private formatter: IFormatter;
+
+    constructor(formatter: IFormatter) {
         this.formatter = formatter;
     }
 }
