@@ -1,9 +1,10 @@
 import {
     IField,
-    IBaseMode,
+    EBaseMode,
     IBaseDatasetParams,
     IBaseDatasetField,
     IFileMetadata,
+    EAggregateType,
 } from "../../interfaces";
 
 // static values
@@ -63,15 +64,15 @@ export default class BaseDataset {
      * @param mode - The mode in which the base is created.
      * @param fields - The user defined fields.
      */
-    _loadBase(mode: IBaseMode, fields?: IField[]) {
+    _loadBase(mode: EBaseMode, fields?: IField[]) {
         // the base is held in its `db` folder
         const dbPath = path.resolve(this.dbpath, "db");
-        if (mode === IBaseMode.CREATE_CLEAN) {
+        if (mode === EBaseMode.CREATE_CLEAN) {
             // create a new QMiner base
             createDirectory(dbPath);
             const schema = this._prepareSchema(fields as IField[]);
             this.base = new qm.Base({ mode, dbPath, schema });
-        } else if (mode === IBaseMode.OPEN) {
+        } else if (mode === EBaseMode.OPEN) {
             // open an existing QMiner base
             this.base = new qm.Base({ mode, dbPath });
         } else {
@@ -123,16 +124,16 @@ export default class BaseDataset {
         fields.forEach((field) => {
             switch (ID2LABEL[TYPE2ID[field.type]]) {
                 case "number":
-                    field.aggregate = "histogram";
+                    field.aggregate = EAggregateType.HISTOGRAM;
                     break;
                 case "text":
-                    field.aggregate = "keywords";
+                    field.aggregate = EAggregateType.KEYWORDS;
                     break;
                 case "category":
-                    field.aggregate = "hierarchy";
+                    field.aggregate = EAggregateType.HIERARCHY;
                     break;
                 case "datetime":
-                    field.aggregate = "timeline";
+                    field.aggregate = EAggregateType.TIMELINE;
                     break;
                 default:
                     break;
@@ -156,12 +157,6 @@ export default class BaseDataset {
      */
     populateBase(file: IFileMetadata) {
         return new Promise<any>((resolve, reject) => {
-            const subset = {
-                label: "root",
-                description: "The root subset. Contains all records of the dataset.",
-            };
-            // TODO: create the subset
-
             // prepare the parser
             const parser = parse({
                 delimiter: file.delimiter,
@@ -175,8 +170,7 @@ export default class BaseDataset {
                 while ((record = parser.read())) {
                     // prepare and push record to dataset
                     const rec = this._formatRecord(record, file.fields);
-                    const recId = this.base?.store("Dataset").push(rec);
-                    // TODO: join the record with the root subset
+                    this.base?.store("Dataset").push(rec);
                 }
             });
             // handle parser errors
@@ -185,10 +179,18 @@ export default class BaseDataset {
             });
             // handle on parser end
             parser.on("end", () => {
+                // prepare subset metadata
+                const subset = {
+                    label: "root",
+                    description: "The root subset. Contains all records of the dataset.",
+                    documents: this.base?.store("Dataset").allRecords,
+                };
+                // create a subset record
+                const subsetId = subsetManager.createSubset(this.base as qm.Base, subset);
                 // TODO: update subset metadata
+                modelManager.aggregate(this.base as qm.Base, subsetId, this.fields);
                 return resolve({});
             });
-
             // read file and skip first line
             const fileIn = qm.fs.openRead(file.filepath);
             fileIn.readLine();

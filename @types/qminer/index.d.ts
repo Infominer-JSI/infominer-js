@@ -54,15 +54,13 @@ declare module "qminer" {
         map(callback: any): any[];
         newRecord(obj: any): Record;
         newRecordSet(idVec: la.IntVector): RecordSet;
-        push(
-            rec: { [key: string]: number | number[] | string | string[] | null },
-            triggerEvents?: boolean = true
-        ): number;
+        push(rec: { [key: string]: any }, triggerEvents?: boolean = true): number;
         recordByName(recName: string): Record | null;
         resetStreamAggreates(): void;
         sample(sampleSize: number): RecordSet;
         toJson(): { [key: any]: any };
         triggerOnAddCallbacks(arg?: Record | number): void;
+        [id: number]: Record | null;
     }
 
     export class RecordSet {
@@ -70,9 +68,10 @@ declare module "qminer" {
         length: number;
         store: Store;
         weighted: boolean;
+        aggr(params: any): { [key: any]: any };
         clone(): RecordSet;
         deleteRecords(rs: RecordSet): RecordSet;
-        each(callback: any): RecordSet;
+        each(callback: (rec: qm.Record) => void): RecordSet;
         filter(callback: any): RecordSet;
         filterByField(
             fieldName: string,
@@ -98,7 +97,7 @@ declare module "qminer" {
         split(callback: number): RecordSet[];
         toJSON(): { [key: any]: any };
         trunc(limit_num: number, offset_num?: number): RecordSet;
-        [key: number]: Record;
+        [id: number]: Record | null;
     }
 
     export class Record {

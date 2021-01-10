@@ -97,16 +97,16 @@ export interface IProcessControlParams {
 }
 
 //////////////////////////////////////////////////////
-// Model interfaces
+// Base interfaces
 //////////////////////////////////////////////////////
 
-export enum IBaseMode {
+export enum EBaseMode {
     CREATE_CLEAN = "createClean",
     OPEN = "open",
 }
 
 export interface IBaseDatasetParams {
-    mode: IBaseMode;
+    mode: EBaseMode;
     dbpath: string;
     fields: IField[];
     metadata: {
@@ -130,21 +130,73 @@ export interface IFileMetadata {
 }
 
 export interface IBaseDatasetField extends qm.IField {
-    showInTable?: boolean;
-    showInGraph?: boolean;
     aggregate?: string;
 }
 
-export interface IModel {
-    run(): void;
-    update(): void;
-    save(fin: any): void;
-    load(fin: any): void;
+export enum EAggregateType {
+    HIERARCHY = "hierarchy",
+    HISTOGRAM = "histogram",
+    KEYWORDS = "keywords",
+    TIMELINE = "timeline",
 }
+
+//////////////////////////////////////////////////////
+// Record interface
+//////////////////////////////////////////////////////
+
+export interface IDocumentRecord extends qm.Record {
+    inSubsets: qm.RecordSet | null;
+}
+
+export interface ISubsetRecord extends qm.Record {
+    label: string;
+    description: null | string;
+    metadata: null | { [key: string]: any };
+    modified: boolean;
+    deleted: boolean;
+    hasElements: qm.RecordSet;
+    resultedIn: qm.Record | null;
+    usedBy: qm.RecordSet | null;
+}
+
+export interface IMethodRecord extends qm.Record {
+    type: string;
+    parameters: { [key: string]: any };
+    result: null | { [key: string]: any };
+    modified: boolean;
+    deleted: boolean;
+    produced: qm.RecordSet | null;
+    appliedOn: qm.Record | null;
+}
+
+//////////////////////////////////////////////////////
+// Subset interface
+//////////////////////////////////////////////////////
+
+export interface ISubsetCreateParams {
+    label: string;
+    description: string;
+    resultedIn?: qm.Record;
+    documents?: qm.RecordSet;
+}
+
+//////////////////////////////////////////////////////
+// Method interface
+//////////////////////////////////////////////////////
+
+export interface IHierarchyObject {
+    name: string;
+    size: number;
+    children: IHierarchyObject[];
+}
+
+//////////////////////////////////////////////////////
+// Formatter interface
+//////////////////////////////////////////////////////
 
 export interface IFormatter {
     subset: (
-        rec: qm.Record
+        rec: ISubsetRecord
     ) => {
         id: number;
         type: string;
@@ -157,7 +209,7 @@ export interface IFormatter {
         metadata: { [key: string]: any } | null;
     };
     method: (
-        rec: qm.Record
+        rec: IMethodRecord
     ) => {
         id: number;
         type: string;
@@ -165,11 +217,11 @@ export interface IFormatter {
         parameters: any;
         results: any;
         produced: number[] | null;
-        appliedOn: number[] | null;
+        appliedOn?: number;
         modified: boolean;
     };
     document: (
-        rec: qm.Record
+        rec: IDocumentRecord
     ) => {
         id: number;
         type: string;

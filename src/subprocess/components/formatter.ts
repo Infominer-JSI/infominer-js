@@ -1,8 +1,13 @@
+import { IDocumentRecord, IMethodRecord, ISubsetRecord } from "../../interfaces";
+
 import qm from "qminer";
 
-function availableRecords(rec: qm.Record, field: string) {
-    const recordSet: qm.RecordSet = rec[field];
-    if (recordSet[0].deleted === undefined) {
+/**
+ * Returns the IDs of the available records.
+ * @param recordSet - The record set containing the subsets or methods.
+ */
+function availableRecords(recordSet: qm.RecordSet) {
+    if (recordSet[0] && recordSet[0].deleted === undefined) {
         // legacy support; records do not have deleted attribute
         return recordSet.map((rec: qm.Record) => rec.$id) as number[];
     }
@@ -16,38 +21,41 @@ export default {
      * Formats the subset record.
      * @param rec - The subset record.
      */
-    subset: (rec: qm.Record) => ({
+    subset: (rec: ISubsetRecord) => ({
         id: rec.$id,
         type: "subset",
-        label: rec.label as string,
-        description: rec.description as string | null,
-        resultedIn: rec.resultedIn ? (rec.resultedIn.$id as number) : null,
-        usedBy: !rec.usedBy.empty ? availableRecords(rec, "usedBy") : null,
-        nDocs: !rec.hasElements.empty ? (rec.hasElements.length as number) : null,
-        modified: rec.modified as boolean,
-        metadata: rec.metadata as { [key: string]: any } | null,
+        label: rec.label,
+        description: rec.description,
+        resultedIn: rec.resultedIn ? rec.resultedIn.$id : null,
+        usedBy: !rec.usedBy?.empty ? availableRecords(rec.usedBy as qm.RecordSet) : null,
+        nDocs: !rec.hasElements.empty ? rec.hasElements.length : null,
+        modified: rec.modified,
+        metadata: rec.metadata,
     }),
-
-    method: (rec: qm.Record) => ({
+    /**
+     * Formats the method record.
+     * @param rec - The method record.
+     */
+    method: (rec: IMethodRecord) => ({
         id: rec.$id,
         type: "method",
-        method: rec.type as string,
-        parameters: rec.parameters as any,
+        method: rec.type,
+        parameters: rec.parameters,
         // TODO: update the results based on the method
-        results: rec.results as any,
-        produced: !rec.produced.empty ? availableRecords(rec, "produced") : null,
-        appliedOn: !rec.appliedOn.empty ? availableRecords(rec, "appliedOn") : null,
-        modified: rec.modified as boolean,
+        results: rec.results,
+        produced: !rec.produced?.empty ? availableRecords(rec.produced as qm.RecordSet) : null,
+        appliedOn: rec.appliedOn?.$id,
+        modified: rec.modified,
     }),
 
     /**
      * Formats the document record.
      * @param rec - The document record.
      */
-    document: (rec: qm.Record) => ({
+    document: (rec: IDocumentRecord) => ({
         id: rec.$id,
         type: "document",
-        subsets: !rec.inSubsets.empty ? availableRecords(rec, "inSubsets") : null,
+        subsets: !rec.inSubsets?.empty ? availableRecords(rec.inSubsets as qm.RecordSet) : null,
         values: rec.toJSON(false, false, false),
     }),
 };
