@@ -4,7 +4,7 @@
     "description": "The infominer backend",
     "main": "./dist/server.js",
     "scripts": {
-        "clean": "rm -r ./data && rm -r ./tmp",
+        "clean": "rm -rf ./data && rm -rf ./tmp && cd ./load && node downgrade && node upgrade",
         "start": "ts-node ./src/server.ts --DEV_MODE",
         "start:dev": "tsnd --respawn ./src/server.ts --DEV_MODE",
         "build": "tsc --project .",

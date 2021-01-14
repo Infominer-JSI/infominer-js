@@ -10,7 +10,7 @@ import uploadFile from "../../middleware/fileUpload";
 import * as converters from "../../middleware/converters";
 
 // import controllers
-import * as controllers from "../../controllers/v1";
+import * as controllers from "../../controllers/v1/controllers";
 
 // initialize the router
 const router = express.Router();

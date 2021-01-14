@@ -6,7 +6,7 @@
 
 // import interfaces
 import { Request, Response, NextFunction } from "express";
-import { EParentCmd, EDatasetStatus } from "../../interfaces";
+import { EParentCmd, EDatasetStatus, EBaseMode } from "../../interfaces";
 
 // import defaults
 import { LABEL2ID } from "../../config/static";
@@ -40,10 +40,12 @@ export const getDatasets = async (req: Request, res: Response, next: NextFunctio
         // get and format the datasets
         const results = await datasetModel.getDatasets({ owner });
         const datasets = results.map((rec: any) => ({
+            type: "dataset",
             id: rec.id,
             name: rec.name,
-            type: "dataset",
-            creation_date: rec.creation_date,
+            description: rec.description,
+            nDocuments: rec.n_documents,
+            created: rec.created,
             status: rec.status,
             group: null,
             order: null,
@@ -153,13 +155,13 @@ export const createDataset = async (req: Request, res: Response, next: NextFunct
                     fields,
                 },
                 dataset: {
-                    mode: "createClean",
+                    mode: EBaseMode.CREATE_CLEAN,
                     dbpath,
                     metadata: {
                         id: datasetId,
                         name,
                         description,
-                        creation_date: record[0].creation_date,
+                        created: record[0].created,
                     },
                     preprocessing: parameters,
                 },
@@ -167,7 +169,7 @@ export const createDataset = async (req: Request, res: Response, next: NextFunct
         };
 
         // send the message to the process
-        return createDatasetProcess(datasetId, message, async (error) => {
+        return createDatasetProcess(datasetId, message, async (error, data) => {
             // remove the file
             removeFile(filepath);
             if (error) {
@@ -178,6 +180,7 @@ export const createDataset = async (req: Request, res: Response, next: NextFunct
                 // update the dataset record
                 await datasetModel.updateDataset(
                     {
+                        n_documents: data.dataset.nDocuments,
                         status: EDatasetStatus.FINISHED,
                         file: {
                             filepath: null,
@@ -206,17 +209,14 @@ export const checkDatasetStatus = async (req: Request, res: Response, next: Next
         const records = await datasetModel.getDatasets({ id: datasetId, owner });
         // validate the record
         if (records.length > 1) {
-            return next(new BadRequest("more than one records found"));
+            return next(new BadRequest(`More than one record found | id=${datasetId}`));
         } else if (records.length === 0) {
-            return next(new BadRequest("no records found"));
+            return next(new BadRequest(`No records found | id=${datasetId}`));
         }
+        // get the dataset metadata
+        const { id, name, description, created, status } = records[0];
         // return the dataset information
-        return res.status(200).json({
-            id: records[0].id,
-            name: records[0].name,
-            creation_date: records[0].creation_date,
-            status: records[0].status,
-        });
+        return res.status(200).json({ id, name, description, created, status });
     } catch (error) {
         return next(new ServerError(error.message));
     }
@@ -225,7 +225,6 @@ export const checkDatasetStatus = async (req: Request, res: Response, next: Next
 // gets the dataset
 export const getDataset = (req: Request, res: Response, next: NextFunction) => {
     return generalRequestWrapper(req, res, next, () => {
-        // TODO: finalize the command
         // TODO: check request structure
         // get the user making the request
         const { owner } = parseCredentials(req);
@@ -245,6 +244,10 @@ export const updateDataset = (req: Request, res: Response, next: NextFunction) =
         const { owner } = parseCredentials(req);
         const { datasetId } = parseParams(req);
         const { dataset } = parseBody(req);
+
+        // update the dataset record
+        datasetModel.updateDataset(dataset, { id: datasetId, owner }).catch(console.log);
+
         // assign the command
         const cmd = EParentCmd.UPDATE_DATASET;
         // return the values
@@ -260,7 +263,7 @@ export const deleteDataset = async (req: Request, res: Response, next: NextFunct
     const { datasetId } = parseParams(req);
     const records = await datasetModel.getDatasets({ id: datasetId, owner });
     if (records.length === 0) {
-        return next(new BadRequest("no datasets found"));
+        return next(new BadRequest("No datasets found"));
     }
     const record = records[0];
     // return the response to the user

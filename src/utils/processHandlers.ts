@@ -6,7 +6,13 @@
  */
 
 // Import interfaces
-import { TGeneralCallback, TRequestCallback, EParentCmd, IProcessSendParams } from "../interfaces";
+import {
+    TGeneralCallback,
+    TRequestCallback,
+    EParentCmd,
+    IProcessSendParams,
+    EBaseMode,
+} from "../interfaces";
 import { Request, Response, NextFunction } from "express";
 
 // Import modules
@@ -46,15 +52,28 @@ const _initProcess = async (childId: number, owner: string, callback: TGeneralCa
         if (records.length > 1) {
             throw new ServerError(`more than one record found`);
         } else if (records.length === 0) {
-            throw new BadRequest(`no records found`);
+            throw new BadRequest(`No records found | id=${childId}`);
         }
 
         // get the dataset parameters
-        // const [{ name, description, created, dbpath, parameters, file }] = records;
+        const [{ name, description, created, dbpath, parameters, file }] = records;
 
         const params = {
-            cmd: EParentCmd.INIT,
-            message: {},
+            cmd: EParentCmd.OPEN_DATASET,
+            content: {
+                file,
+                dataset: {
+                    mode: EBaseMode.OPEN,
+                    dbpath,
+                    metadata: {
+                        id: childId,
+                        name,
+                        description,
+                        created,
+                    },
+                    preprocessing: parameters,
+                },
+            },
         };
         // initialize the child process
         processControl.createChild(childId);
@@ -92,13 +111,13 @@ const generalUserResponse = (_req: Request, res: Response, next: NextFunction) =
 ) => (error ? next(new ServerError(error.message)) : res.status(200).json(results));
 
 // creates a general request wrapper
-function generalRequestWrapper(
+async function generalRequestWrapper(
     req: Request,
     res: Response,
     next: NextFunction,
     callback: TRequestCallback
 ) {
-    const { id, owner, cmd, content } = callback();
+    const { id, owner, cmd, content } = await callback();
     const message = { cmd, content };
     sendToProcess(id, owner, message, generalUserResponse(req, res, next));
 }

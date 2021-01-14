@@ -7,13 +7,13 @@ import qm from "qminer";
  * @param recordSet - The record set containing the subsets or methods.
  */
 function availableRecords(recordSet: qm.RecordSet) {
-    if (recordSet[0] && recordSet[0].deleted === undefined) {
+    if (!recordSet.empty && recordSet[0] && recordSet[0].deleted === undefined) {
         // legacy support; records do not have deleted attribute
         return recordSet.map((rec: qm.Record) => rec.$id) as number[];
     }
     // filter out documents that were deleted
     recordSet.filterByField("deleted", false);
-    return recordSet.length ? (recordSet.map((rec: qm.Record) => rec.$id) as number[]) : null;
+    return !recordSet.empty ? (recordSet.map((rec: qm.Record) => rec.$id) as number[]) : null;
 }
 
 export default {
@@ -27,8 +27,8 @@ export default {
         label: rec.label,
         description: rec.description,
         resultedIn: rec.resultedIn ? rec.resultedIn.$id : null,
-        usedBy: !rec.usedBy?.empty ? availableRecords(rec.usedBy as qm.RecordSet) : null,
-        nDocs: !rec.hasElements.empty ? rec.hasElements.length : null,
+        usedBy: rec.usedBy && !rec.usedBy.empty ? availableRecords(rec.usedBy) : null,
+        nDocuments: !rec.hasElements.empty ? rec.hasElements.length : null,
         modified: rec.modified,
         metadata: rec.metadata,
     }),
@@ -42,8 +42,8 @@ export default {
         method: rec.type,
         parameters: rec.parameters,
         // TODO: update the results based on the method
-        results: rec.results,
-        produced: !rec.produced?.empty ? availableRecords(rec.produced as qm.RecordSet) : null,
+        result: rec.result,
+        produced: rec.produced && !rec.produced.empty ? availableRecords(rec.produced) : null,
         appliedOn: rec.appliedOn?.$id,
         modified: rec.modified,
     }),

@@ -35,8 +35,10 @@ export enum EParentCmd {
     INIT = "INIT",
     SHUTDOWN = "SHUTDOWN",
     // dataset commands
-    GET_DATASET = "GET_DATASET",
+
     CREATE_DATASET = "CREATE_DATASET",
+    OPEN_DATASET = "OPEN_DATASET",
+    GET_DATASET = "GET_DATASET",
     UPDATE_DATASET = "UPDATE_DATASET",
     DELETE_DATASET = "DELETE_DATASET",
     CHECK_DATASET_STATUS = "CHECK_DATASET_STATUS",
@@ -112,8 +114,8 @@ export interface IBaseDatasetParams {
     metadata: {
         id: number;
         name: string;
-        description: string;
-        creation_date: string;
+        description: string | null;
+        created: string;
     };
     preprocessing?: {
         stopwords?: {
@@ -140,6 +142,11 @@ export enum EAggregateType {
     TIMELINE = "timeline",
 }
 
+export interface IBaseDatasetUpdateParams {
+    name?: string;
+    description?: string;
+}
+
 //////////////////////////////////////////////////////
 // Record interface
 //////////////////////////////////////////////////////
@@ -155,8 +162,15 @@ export interface ISubsetRecord extends qm.Record {
     modified: boolean;
     deleted: boolean;
     hasElements: qm.RecordSet;
-    resultedIn: qm.Record | null;
-    usedBy: qm.RecordSet | null;
+    resultedIn: IMethodRecord | null;
+    usedBy: IMethodRecordSet | null;
+}
+
+export interface ISubsetRecordSet extends qm.RecordSet {
+    each(callback: (rec: ISubsetRecord) => void): ISubsetRecordSet;
+    filter(callback: (rec: ISubsetRecord) => boolean): ISubsetRecordSet;
+    map(callback: (rec: ISubsetRecord) => any): any[];
+    [key: number]: ISubsetRecord;
 }
 
 export interface IMethodRecord extends qm.Record {
@@ -165,8 +179,15 @@ export interface IMethodRecord extends qm.Record {
     result: null | { [key: string]: any };
     modified: boolean;
     deleted: boolean;
-    produced: qm.RecordSet | null;
-    appliedOn: qm.Record | null;
+    produced: ISubsetRecordSet | null;
+    appliedOn: ISubsetRecord | null;
+}
+
+export interface IMethodRecordSet extends qm.RecordSet {
+    each(callback: (rec: IMethodRecord) => void): IMethodRecordSet;
+    filter(callback: (rec: IMethodRecord) => boolean): IMethodRecordSet;
+    map(callback: (rec: IMethodRecord) => any): any[];
+    [key: number]: IMethodRecord;
 }
 
 //////////////////////////////////////////////////////
@@ -178,6 +199,11 @@ export interface ISubsetCreateParams {
     description: string;
     resultedIn?: qm.Record;
     documents?: qm.RecordSet;
+}
+
+export interface ISubsetUpdateParams {
+    label?: string;
+    description?: string;
 }
 
 //////////////////////////////////////////////////////
@@ -194,38 +220,38 @@ export interface IHierarchyObject {
 // Formatter interface
 //////////////////////////////////////////////////////
 
+export interface ISubsetFormatter {
+    id: number;
+    type: string;
+    label: string;
+    description: string | null;
+    resultedIn: number | null;
+    usedBy: number[] | null;
+    nDocuments: number | null;
+    modified: boolean;
+    metadata: { [key: string]: any } | null;
+}
+
+export interface IMethodFormatter {
+    id: number;
+    type: string;
+    method: string;
+    parameters: any;
+    result: any;
+    produced: number[] | null;
+    appliedOn?: number;
+    modified: boolean;
+}
+
+export interface IDocumentFormatter {
+    id: number;
+    type: string;
+    subsets: number[] | null;
+    values: { [key: string]: any };
+}
+
 export interface IFormatter {
-    subset: (
-        rec: ISubsetRecord
-    ) => {
-        id: number;
-        type: string;
-        label: string;
-        description: string | null;
-        resultedIn: number | null;
-        usedBy: number[] | null;
-        nDocs: number | null;
-        modified: boolean;
-        metadata: { [key: string]: any } | null;
-    };
-    method: (
-        rec: IMethodRecord
-    ) => {
-        id: number;
-        type: string;
-        method: string;
-        parameters: any;
-        results: any;
-        produced: number[] | null;
-        appliedOn?: number;
-        modified: boolean;
-    };
-    document: (
-        rec: IDocumentRecord
-    ) => {
-        id: number;
-        type: string;
-        subsets: number[] | null;
-        values: { [key: string]: any };
-    };
+    subset: (rec: ISubsetRecord) => ISubsetFormatter;
+    method: (rec: IMethodRecord) => IMethodFormatter;
+    document: (rec: IDocumentRecord) => IDocumentFormatter;
 }

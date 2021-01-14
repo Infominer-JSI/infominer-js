@@ -71,8 +71,8 @@ declare module "qminer" {
         aggr(params: any): { [key: any]: any };
         clone(): RecordSet;
         deleteRecords(rs: RecordSet): RecordSet;
-        each(callback: (rec: qm.Record) => void): RecordSet;
-        filter(callback: any): RecordSet;
+        each(callback: (rec: Record) => void): RecordSet;
+        filter(callback: (rec: Record) => boolean): RecordSet;
         filterByField(
             fieldName: string,
             minVal: string | number | boolean,
@@ -83,7 +83,7 @@ declare module "qminer" {
         getMatrix(fieldName: string): la.Matrix | la.SparseMatrix;
         getVector(fieldName: string): la.Vector;
         join(joinName: string, sampleSize?: number): RecordSet;
-        map(callback: any): any[];
+        map(callback: (rec: Record) => any): any[];
         reverse(): RecordSet;
         sample(num: number): RecordSet;
         setDiff(rs: RecordSet): RecordSet;

@@ -1,21 +1,124 @@
 import {
     EAggregateType,
     IBaseDatasetField,
-    IDocumentRecord,
     IFormatter,
-    IHierarchyObject as IHierarchyChildObject,
+    IHierarchyObject,
+    ISubsetFormatter,
+    IMethodRecord,
     ISubsetRecord,
+    IMethodFormatter,
 } from "../../interfaces";
 
 import qm from "qminer";
-export default class ModelManager {
+import { BadRequest } from "../../utils/ErrorDefs";
+
+export default class MethodManager {
     private formatter: IFormatter;
 
+    /**
+     * Creates a new MethodManager instance.
+     * @param formatter - The formating functions.
+     */
     constructor(formatter: IFormatter) {
         this.formatter = formatter;
     }
 
-    aggregate(base: qm.Base, subsetId: number, fields: IBaseDatasetField[]) {
+    /////////////////////////////////////////////
+    // METHOD HANDLERS
+    /////////////////////////////////////////////
+
+    /**
+     * Gets all of the non-deleted methods.
+     * @param base - The qminer base.
+     */
+    getMethods(base: qm.Base) {
+        const methods = base.store("Methods").allRecords;
+        if (methods && !methods.empty && methods[0] && methods[0].deleted !== undefined) {
+            methods.filterByField("deleted", false);
+        }
+        return {
+            methods: methods.map((rec) =>
+                this.formatter.method(rec as IMethodRecord)
+            ) as IMethodFormatter[],
+        };
+    }
+
+    /**
+     * Gets the specific method metadata.
+     * @param base - The qminer base.
+     * @param methodId - The method ID.
+     */
+    getMethod(base: qm.Base, methodId: number) {
+        /**
+         * Gets all of the undeleted records.
+         * @param recordSet - The methods record set.
+         */
+        const getMethodSubsets = (recordSet: qm.RecordSet) => {
+            if (!recordSet.empty && recordSet[0] && recordSet[0].deleted !== undefined) {
+                recordSet.filterByField("deleted", false);
+            }
+            return recordSet;
+        };
+        if (!Number.isInteger(methodId)) {
+            throw new BadRequest(`Invalid method | id=${methodId}`);
+        }
+        // get the subset record
+        const method = base.store("Methods")[methodId] as IMethodRecord;
+        if (!method || method.deleted) {
+            throw new BadRequest(`Method does not exist | id=${methodId}`);
+        }
+        // prepare the response
+        const response = {
+            methods: this.formatter.method(method),
+            subsets: [] as ISubsetFormatter[],
+        };
+        // get all associated methods
+        if (method.appliedOn) {
+            response.subsets.push(this.formatter.subset(method.appliedOn as ISubsetRecord));
+        }
+        if (!method.produced?.empty) {
+            const produced = getMethodSubsets(method.produced as qm.RecordSet);
+            response.subsets.push(
+                ...produced.map((rec) => this.formatter.subset(rec as ISubsetRecord))
+            );
+        }
+        return response;
+    }
+
+    /**
+     * Deletes the methods and its associate subsets.
+     * @param base - The qminer base.
+     * @param methodId - The method ID.
+     * @param callback - The function called to delete subsets related to the method.
+     */
+    deleteMethod(base: qm.Base, methodId: number, callback: any) {
+        if (!Number.isInteger(methodId)) {
+            throw new BadRequest(`Invalid method | id=${methodId}`);
+        }
+        const method = base.store("Methods")[methodId] as IMethodRecord;
+        if (!method || method.deleted) {
+            return true;
+        }
+        if (method.deleted !== undefined && method.deleted === false) {
+            method.deleted = true;
+            method.produced?.each((rec: qm.Record) => {
+                callback(base, rec.$id, this.deleteMethod.bind(this));
+            });
+        }
+        return true;
+    }
+
+    /////////////////////////////////////////////
+    // SPECIFIC FUNCTIONALITIES
+    /////////////////////////////////////////////
+
+    /**
+     * Calculates the statistics of the subset and creates a new method.
+     * @param base - The qminer base.
+     * @param subsetId - The subset ID.
+     * @param fields - The base fields metadata.
+     */
+    aggregates(base: qm.Base, subsetId: number, fields: IBaseDatasetField[]) {
         const subset = base.store("Subsets")[subsetId] as ISubsetRecord;
         // calculates the aggregates
         const aggregates = fields
@@ -37,9 +140,7 @@ export default class ModelManager {
         };
         // join the created method with the subset
         const methodId = base.store("Methods").push(method);
-        base.store("Methods")[methodId]?.$addJoin("appliedOn", subset.$id);
-        // return the method stored in the base
-        return {};
+        base.store("Methods")[methodId]?.$addJoin("appliedOn", subsetId);
     }
 
     /**
@@ -56,7 +157,7 @@ export default class ModelManager {
         if (aggregate === EAggregateType.HIERARCHY) {
             // get the hierarchy statistics
             statistics.hierarchy = [];
-            subset.hasElements.each((rec: IDocumentRecord) => {
+            subset.hasElements.each((rec) => {
                 const fieldVals: string[] | null = rec[fieldName]?.toArray();
                 if (fieldVals) {
                     this._createHierarchy(statistics.hierarchy, fieldVals[0], fieldVals.slice(1));
@@ -107,7 +208,7 @@ export default class ModelManager {
      * @param current - The current value.
      * @param next - The array of next values.
      */
-    _createHierarchy(hierarchy: IHierarchyChildObject[], current: string, next: string[]) {
+    _createHierarchy(hierarchy: IHierarchyObject[], current: string, next: string[]) {
         // check if that is the last value
         if (next.length === 0) {
             for (const child of hierarchy) {
@@ -119,7 +220,6 @@ export default class ModelManager {
             hierarchy.push({ name: current, size: 1, children: [] });
             return;
         }
-
         let object;
         for (const child of hierarchy) {
             if (child.name === current) {

@@ -5,6 +5,9 @@ import {
     IBaseDatasetField,
     IFileMetadata,
     EAggregateType,
+    ISubsetCreateParams,
+    ISubsetUpdateParams,
+    IBaseDatasetUpdateParams,
 } from "../../interfaces";
 
 // static values
@@ -15,18 +18,18 @@ import fs from "fs";
 import path from "path";
 import parse from "csv-parse";
 // directory creation functions
-import { createDirectory } from "../../utils/FileSystem";
+import { createDirectory, removeFile } from "../../utils/FileSystem";
 
 // import formatter
 import formatter from "./formatter";
 
 // import subset and model managers
 import SubsetManager from "./subsetManager";
-import ModelManager from "./modelManager";
+import MethodManager from "./methodManager";
 
 // initialize subset and model managers
 const subsetManager = new SubsetManager(formatter);
-const modelManager = new ModelManager(formatter);
+const methodManager = new MethodManager(formatter);
 
 export default class BaseDataset {
     private base: qm.Base | undefined;
@@ -56,7 +59,7 @@ export default class BaseDataset {
     }
 
     /////////////////////////////////////////////
-    // BASE METHODS
+    // BASE HANDLERS
     /////////////////////////////////////////////
 
     /**
@@ -73,6 +76,8 @@ export default class BaseDataset {
             const schema = this._prepareSchema(fields as IField[]);
             this.base = new qm.Base({ mode, dbPath, schema });
         } else if (mode === EBaseMode.OPEN) {
+            // remove any possible lock files in the database
+            removeFile(path.resolve(dbPath, "lock"));
             // open an existing QMiner base
             this.base = new qm.Base({ mode, dbPath });
         } else {
@@ -147,8 +152,49 @@ export default class BaseDataset {
         this.base?.close();
     }
 
+    /** Gets the dataset ID. */
+    getID() {
+        return this.metadata.id;
+    }
+
+    /**
+     * Updates the dataset metadata.
+     * @param dataset - The dataset metadata.
+     */
+    updateDataset(dataset: IBaseDatasetUpdateParams) {
+        for (const [key, value] of Object.entries(dataset)) {
+            switch (key) {
+                case "name":
+                    this.metadata[key] = value as string;
+                    break;
+                case "description":
+                    this.metadata[key] = value as string | null;
+                    break;
+                default:
+                    break;
+            }
+        }
+        // return the updated metadata
+        return this.metadata;
+    }
+
+    /**
+     * Gets the dataset metadata, subsets and methods.
+     */
+    getDataset() {
+        return {
+            dataset: {
+                type: "dataset",
+                ...this.metadata,
+                nDocuments: this.base?.store("Dataset").length,
+            },
+            ...subsetManager.getSubsets(this.base as qm.Base),
+            ...methodManager.getMethods(this.base as qm.Base),
+        };
+    }
+
     /////////////////////////////////////////////
-    // RECORD METHODS
+    // RECORD HANDLERS
     /////////////////////////////////////////////
 
     /**
@@ -156,7 +202,7 @@ export default class BaseDataset {
      * @param file - The object containing the dataset metadata.
      */
     populateBase(file: IFileMetadata) {
-        return new Promise<any>((resolve, reject) => {
+        return new Promise<boolean>((resolve, reject) => {
             // prepare the parser
             const parser = parse({
                 delimiter: file.delimiter,
@@ -186,10 +232,8 @@ export default class BaseDataset {
                     documents: this.base?.store("Dataset").allRecords,
                 };
                 // create a subset record
-                const subsetId = subsetManager.createSubset(this.base as qm.Base, subset);
-                // TODO: update subset metadata
-                modelManager.aggregate(this.base as qm.Base, subsetId, this.fields);
-                return resolve({});
+                this.createSubset(subset);
+                return resolve(true);
             });
             // read file and skip first line
             const fileIn = qm.fs.openRead(file.filepath);
@@ -248,16 +292,95 @@ export default class BaseDataset {
         }
     }
 
-    /** Checks if the value is empty. */
+    /**
+     * Checks if the value is empty.
+     * @param value - The value.
+     */
     _isValueEmpty(value: string) {
         return value === null || value === "";
     }
 
     /////////////////////////////////////////////
-    // SUBSET METHODS
+    // SUBSET HANDLERS
     /////////////////////////////////////////////
 
+    /**
+     * Gets all subsets.
+     */
+    getSubsets() {
+        return subsetManager.getSubsets(this.base as qm.Base);
+    }
+
+    /**
+     * Creates a new subset and its statistics method.
+     * @param subset - Subset metadata.
+     */
+    createSubset(subset: ISubsetCreateParams) {
+        // create the subset record
+        const subsetId = subsetManager.createSubset(this.base as qm.Base, subset);
+        // calculate the statistics of the subset
+        methodManager.aggregates(this.base as qm.Base, subsetId, this.fields);
+        // return the subset metadata
+        return this.getSubset(subsetId);
+    }
+
+    /**
+     * Gets the specific subset.
+     * @param subsetId - The subset ID.
+     */
+    getSubset(subsetId: number) {
+        return subsetManager.getSubset(this.base as qm.Base, subsetId);
+    }
+
+    /**
+     * Updates the subset with the new metadata.
+     * @param subsetId - The Subset ID.
+     * @param subset - The subset metadata.
+     */
+    updateSubset(subsetId: number, subset: ISubsetUpdateParams) {
+        return subsetManager.updateSubset(this.base as qm.Base, subsetId, subset);
+    }
+
+    /**
+     * Deletes the subset and all its associated methods.
+     * @param subsetId - The subset ID.
+     */
+    deleteSubset(subsetId: number) {
+        return subsetManager.deleteSubset(
+            this.base as qm.Base,
+            subsetId,
+            methodManager.deleteMethod.bind(methodManager)
+        );
+    }
+
     /////////////////////////////////////////////
-    // MODEL METHODS
+    // METHOD HANDLERS
     /////////////////////////////////////////////
+
+    /**
+     * Gets all methods.
+     */
+    getMethods() {
+        return methodManager.getMethods(this.base as qm.Base);
+    }
+
+    /**
+     * Gets a specific method.
+     * @param methodId - The method ID.
+     */
+    getMethod(methodId: number) {
+        return methodManager.getMethod(this.base as qm.Base, methodId);
+    }
+
+    /**
+     * Deletes the methods and all its assocaited subsets.
+     * @param methodId - The method ID.
+     */
+    deleteMethod(methodId: number) {
+        return methodManager.deleteMethod(
+            this.base as qm.Base,
+            methodId,
+            subsetManager.deleteSubset.bind(subsetManager)
+        );
+    }
 }
