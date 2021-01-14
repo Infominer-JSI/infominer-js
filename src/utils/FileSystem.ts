@@ -9,7 +9,7 @@ import fs from "fs";
 import path from "path";
 
 // import configuration
-import { DATAPATH } from "../config/defaults";
+import { DATAPATH } from "../config/static";
 
 // removes the file
 export function removeFile(fileName: string) {

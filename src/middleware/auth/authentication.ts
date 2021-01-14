@@ -64,13 +64,13 @@ export default function (app: Express, passport: PassportStatic, dev_mode?: bool
 
     app.get("/api/v1/auth/account", (req: Request, res: Response) => {
         let authentication;
-        if (!dev_mode) {
+        if (dev_mode) {
+            authentication = { authenticated: true, user: "development" };
+        } else {
             // prepare authentication object
             authentication = req.isAuthenticated()
                 ? { authenticated: true, user: req.user }
                 : { authenticated: false, user: null };
-        } else {
-            authentication = { authenticated: true, user: "development" };
         }
         // response with a json object
         res.json(authentication);
@@ -85,7 +85,7 @@ export default function (app: Express, passport: PassportStatic, dev_mode?: bool
         app.all("/api/*", (req: Request, _res: Response, next: NextFunction) => {
             // check if the user is authenticated or not
             return !req.isAuthenticated()
-                ? next(new UserNotAuthorized("User not authenticated"))
+                ? next(new UserNotAuthorized("user not authenticated"))
                 : next();
         });
     }

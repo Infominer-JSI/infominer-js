@@ -25,7 +25,7 @@
     {
         "name": "Methods",
         "fields": [
-            { "name": "type", "type": "string" },
+            { "name": "type", "type": "string", "shortstring": true },
             { "name": "parameters", "type": "json" },
             { "name": "result", "type": "json", "null": true },
             { "name": "modified", "type": "bool", "default": false },
@@ -33,7 +33,7 @@
         ],
         "joins": [
             { "name": "produced", "type": "index", "store": "Subsets", "inverse": "resultedIn" },
-            { "name": "appliedOn", "type": "index", "store": "Subsets", "inverse": "usedBy" }
+            { "name": "appliedOn", "type": "field", "store": "Subsets", "inverse": "usedBy" }
         ]
     }
 ]

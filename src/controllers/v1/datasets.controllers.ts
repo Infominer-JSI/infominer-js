@@ -6,10 +6,10 @@
 
 // import interfaces
 import { Request, Response, NextFunction } from "express";
-import { EParentCmd, EDatasetStatus } from "../../interfaces";
+import { EParentCmd, EDatasetStatus, EBaseMode } from "../../interfaces";
 
 // import defaults
-import { LABEL2ID } from "../../config/defaults";
+import { LABEL2ID } from "../../config/static";
 
 // import utils
 import {
@@ -40,17 +40,19 @@ export const getDatasets = async (req: Request, res: Response, next: NextFunctio
         // get and format the datasets
         const results = await datasetModel.getDatasets({ owner });
         const datasets = results.map((rec: any) => ({
+            type: "dataset",
             id: rec.id,
             name: rec.name,
-            type: "dataset",
-            creation_date: rec.creation_date,
+            description: rec.description,
+            nDocuments: rec.n_documents,
+            created: rec.created,
             status: rec.status,
             group: null,
             order: null,
         }));
         return res.status(200).json({ datasets });
     } catch (error) {
-        return next(new ServerError("Server Side Error"));
+        return next(new ServerError(error.message));
     }
 };
 
@@ -66,7 +68,7 @@ export const uploadDataset = async (req: Request, res: Response, next: NextFunct
         if (xerror) {
             // delete the file
             removeFile(filepath);
-            return next(new BadRequest("Bad Request"));
+            return next(new BadRequest(xerror.message));
         }
 
         // get the column fields
@@ -74,7 +76,7 @@ export const uploadDataset = async (req: Request, res: Response, next: NextFunct
         if (yerror) {
             // delete the file
             removeFile(filepath);
-            return next(new BadRequest("Bad Request"));
+            return next(new BadRequest(yerror.message));
         }
 
         // store the file metadata into the database
@@ -101,7 +103,7 @@ export const uploadDataset = async (req: Request, res: Response, next: NextFunct
     } catch (error) {
         // delete the file
         removeFile(filepath);
-        return next(new ServerError("Server Side Error"));
+        return next(new ServerError(error.message));
     }
 };
 
@@ -118,6 +120,13 @@ export const createDataset = async (req: Request, res: Response, next: NextFunct
 
         // create the database path
         const dbpath = createDatabaseDirectoryPath(owner);
+
+        const dataset = await datasetModel.getDatasets({ id: datasetId, owner });
+        if (dataset.length === 0 || dataset[0].status !== EDatasetStatus.IN_QUEUE) {
+            // return the bad request
+            return next(new BadRequest("no valid datasets found"));
+        }
+
         // update the dataset record
         const record = await datasetModel.updateDataset(
             {
@@ -129,11 +138,6 @@ export const createDataset = async (req: Request, res: Response, next: NextFunct
             },
             { id: datasetId, owner }
         );
-        if (record.length == 0) {
-            // return the bad request
-            return next(new BadRequest("Bad Request"));
-        }
-
         // return the notification to the user
         res.status(200).json({ dataset: { id: datasetId } });
 
@@ -151,26 +155,32 @@ export const createDataset = async (req: Request, res: Response, next: NextFunct
                     fields,
                 },
                 dataset: {
-                    id: datasetId,
-                    name,
-                    description,
-                    creation_date: record[0].creation_date,
-                    mode: "createClean",
+                    mode: EBaseMode.CREATE_CLEAN,
                     dbpath,
-                    parameters,
+                    metadata: {
+                        id: datasetId,
+                        name,
+                        description,
+                        created: record[0].created,
+                    },
+                    preprocessing: parameters,
                 },
             },
         };
 
         // send the message to the process
-        return createDatasetProcess(datasetId, message, async (error) => {
+        return createDatasetProcess(datasetId, message, async (error, data) => {
+            // remove the file
+            removeFile(filepath);
             if (error) {
                 // delete the dataset instance
                 await datasetModel.deleteDataset({ id: datasetId, owner });
+                throw error;
             } else {
                 // update the dataset record
                 await datasetModel.updateDataset(
                     {
+                        n_documents: data.dataset.nDocuments,
                         status: EDatasetStatus.FINISHED,
                         file: {
                             filepath: null,
@@ -182,11 +192,9 @@ export const createDataset = async (req: Request, res: Response, next: NextFunct
                     { id: datasetId, owner }
                 );
             }
-            // remove the file
-            removeFile(filepath);
         });
     } catch (error) {
-        return next(new ServerError("Server Side Error"));
+        return next(new ServerError(error.message));
     }
 };
 
@@ -201,26 +209,22 @@ export const checkDatasetStatus = async (req: Request, res: Response, next: Next
         const records = await datasetModel.getDatasets({ id: datasetId, owner });
         // validate the record
         if (records.length > 1) {
-            return next(new BadRequest("BadRequest"));
+            return next(new BadRequest(`More than one record found | id=${datasetId}`));
         } else if (records.length === 0) {
-            return next(new BadRequest("BadRequest"));
+            return next(new BadRequest(`No records found | id=${datasetId}`));
         }
+        // get the dataset metadata
+        const { id, name, description, created, status } = records[0];
         // return the dataset information
-        return res.status(200).json({
-            id: records[0].id,
-            name: records[0].name,
-            creation_date: records[0].creation_date,
-            status: records[0].status,
-        });
+        return res.status(200).json({ id, name, description, created, status });
     } catch (error) {
-        return next(new ServerError("Server Side Error"));
+        return next(new ServerError(error.message));
     }
 };
 
 // gets the dataset
 export const getDataset = (req: Request, res: Response, next: NextFunction) => {
     return generalRequestWrapper(req, res, next, () => {
-        // TODO: finalize the command
         // TODO: check request structure
         // get the user making the request
         const { owner } = parseCredentials(req);
@@ -240,6 +244,10 @@ export const updateDataset = (req: Request, res: Response, next: NextFunction) =
         const { owner } = parseCredentials(req);
         const { datasetId } = parseParams(req);
         const { dataset } = parseBody(req);
+
+        // update the dataset record
+        datasetModel.updateDataset(dataset, { id: datasetId, owner }).catch(console.log);
+
         // assign the command
         const cmd = EParentCmd.UPDATE_DATASET;
         // return the values
@@ -255,7 +263,7 @@ export const deleteDataset = async (req: Request, res: Response, next: NextFunct
     const { datasetId } = parseParams(req);
     const records = await datasetModel.getDatasets({ id: datasetId, owner });
     if (records.length === 0) {
-        return next(new BadRequest("Bad Request"));
+        return next(new BadRequest("No datasets found"));
     }
     const record = records[0];
     // return the response to the user

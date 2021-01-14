@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS infominer.datasets (
     name          varchar DEFAULT NULL,
     description   varchar DEFAULT NULL,
     dbpath        varchar DEFAULT NULL,
-    creation_date timestamp with time zone DEFAULT NOW() NOT NULL,
+    created       timestamp with time zone DEFAULT NOW() NOT NULL,
     status        infominer.status DEFAULT 'IN_QUEUE',
     parameters    jsonb
 );

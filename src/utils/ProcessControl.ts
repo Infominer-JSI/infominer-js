@@ -49,7 +49,13 @@ export default class ProcessControl {
     // initialize the child process
     createChild(childId: number) {
         // create the child process
-        const child = fork(this._processPath, [], { silent: false });
+        const child = fork(this._processPath, [], {
+            silent: false,
+            // development mode: used with start:dev
+            ...(process.env.TS_NODE_DEV && {
+                execArgv: ["-r", "ts-node/register"],
+            }),
+        });
         this._childH.set(childId, { child, connected: true, lastCall: 0 });
 
         child.on("message", (message: IChildMsg) => {
@@ -146,12 +152,10 @@ export default class ProcessControl {
         return new Promise((resolve, reject) => {
             console.log("Running stop process tasks for child id=", childId);
             try {
-                console.log("Send request");
                 this.sendAndWait(childId, { cmd: EParentCmd.SHUTDOWN }, (error) =>
                     error ? reject(error) : resolve(null)
                 );
             } catch (xerror) {
-                console.log("Child already closed");
                 return reject(xerror);
             }
         });

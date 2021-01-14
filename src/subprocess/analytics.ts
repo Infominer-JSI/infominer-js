@@ -6,14 +6,13 @@ import { EParentCmd, IChildMsg, IParentMsg, TMessageProcess } from "../interface
 // import modules
 import BaseDataset from "./components/baseDataset";
 
+// data placeholder
+let baseDataset: BaseDataset | null = null;
 //////////////////////////////////////////////////////
 // Set infinite interval and parameters
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 const interval = setInterval(() => {}, 10 * 1000);
-
-// TODO: baseDataset placeholder
-const baseDataset: BaseDataset | null = null;
 
 //////////////////////////////////////////////////////
 // Set parent-child communcation
@@ -42,15 +41,69 @@ const processSend = (message: IChildMsg) => (process.send ? process.send(message
 // correctly handles the sent message
 function messageHandler(message: IParentMsg) {
     switch (message.body.cmd) {
+        /////////////////////////////
+        // BASIC COMMANDS
+        /////////////////////////////
+
         case EParentCmd.INIT:
             initialize(message);
             break;
         case EParentCmd.SHUTDOWN:
             shutdownProcess(message);
             break;
+
+        /////////////////////////////
+        // DATASET COMMANDS
+        /////////////////////////////
+
         case EParentCmd.CREATE_DATASET:
             createDataset(message);
             break;
+        case EParentCmd.OPEN_DATASET:
+            openDataset(message);
+            break;
+        case EParentCmd.GET_DATASET:
+            getDataset(message);
+            break;
+        case EParentCmd.UPDATE_DATASET:
+            updateDataset(message);
+            break;
+
+        /////////////////////////////
+        // SUBSET COMMANDS
+        /////////////////////////////
+
+        case EParentCmd.GET_SUBSETS:
+            getSubsets(message);
+            break;
+        case EParentCmd.GET_SUBSET:
+            getSubset(message);
+            break;
+        case EParentCmd.UPDATE_SUBSET:
+            updateSubset(message);
+            break;
+        case EParentCmd.DELETE_SUBSET:
+            deleteSubset(message);
+            break;
+
+        /////////////////////////////
+        // METHOD COMMANDS
+        /////////////////////////////
+
+        case EParentCmd.GET_METHODS:
+            getMethods(message);
+            break;
+        case EParentCmd.GET_METHOD:
+            getMethod(message);
+            break;
+        case EParentCmd.DELETE_METHOD:
+            deleteMethod(message);
+            break;
+
+        /////////////////////////////
+        // UNKNOWN COMMAND
+        /////////////////////////////
+
         default:
             unknownCommand(message);
             break;
@@ -68,7 +121,7 @@ async function _functionWrapper(message: IParentMsg, callback: TMessageProcess) 
     const { requestId, body } = message;
     try {
         // do something with the body and return the output
-        const results = await callback(body.content);
+        const results = await callback(body);
         return processSend({ requestId, results });
     } catch (error) {
         // send the error message back to the parent
@@ -81,9 +134,9 @@ async function _functionWrapper(message: IParentMsg, callback: TMessageProcess) 
 //////////////////////////////////////////////////////
 
 // initialize the process
-function initialize(message: IParentMsg) {
-    _functionWrapper(message, () => ({
-        message: "Process initialized",
+async function initialize(message: IParentMsg) {
+    await _functionWrapper(message, () => ({
+        initialized: true,
     }));
 }
 
@@ -101,10 +154,10 @@ async function shutdownProcess(message: IParentMsg) {
 }
 
 // handle unknown commands
-function unknownCommand(message: IParentMsg) {
-    const { requestId, body } = message;
-    // send the error message back to the parent
-    processSend({ requestId, error: `unknown command: ${body.cmd}` });
+async function unknownCommand(message: IParentMsg) {
+    await _functionWrapper(message, (body) => {
+        throw Error(`Unknown command: ${body?.cmd}`);
+    });
 }
 
 //////////////////////////////////////////////////////
@@ -113,11 +166,108 @@ function unknownCommand(message: IParentMsg) {
 
 // creates the dataset
 async function createDataset(message: IParentMsg) {
-    await _functionWrapper(message, (content) => {
+    await _functionWrapper(message, async (body) => {
         // create the base dataset
-        // TODO: parse the body
-        console.log(content);
-        //baseDataset = new BaseDataset(body);
-        return { message: "Dataset created" };
+        const { file, dataset: data } = body?.content;
+        baseDataset = new BaseDataset({ fields: file.fields, ...data });
+        await baseDataset.populateBase(file);
+        const { dataset, subsets, methods } = baseDataset.getDataset();
+        return { dataset, subsets, methods };
+    });
+}
+
+// opens the dataset
+async function openDataset(message: IParentMsg) {
+    await _functionWrapper(message, async (body) => {
+        const { file, dataset } = body?.content;
+        baseDataset = new BaseDataset({ fields: file.fields, ...dataset });
+        // return the dataset ID
+        return { dataset: baseDataset.metadata };
+    });
+}
+
+// updates the dataset
+async function getDataset(message: IParentMsg) {
+    await _functionWrapper(message, async () => {
+        const { dataset, subsets, methods } = (baseDataset as BaseDataset).getDataset();
+        return { dataset, subsets, methods };
+    });
+}
+
+// updates the dataset
+async function updateDataset(message: IParentMsg) {
+    await _functionWrapper(message, async (body) => {
+        const { dataset: data } = body?.content;
+        const dataset = (baseDataset as BaseDataset).updateDataset(data);
+        return { dataset };
+    });
+}
+
+//////////////////////////////////////////////////////
+// Subset request handling
+//////////////////////////////////////////////////////
+
+// gets the subsets
+async function getSubsets(message: IParentMsg) {
+    await _functionWrapper(message, async () => {
+        const { subsets } = (baseDataset as BaseDataset).getSubsets();
+        return { subsets };
+    });
+}
+
+// gets the specific subset
+async function getSubset(message: IParentMsg) {
+    await _functionWrapper(message, async (body) => {
+        const { subsetId } = body?.content;
+        const { subsets, methods } = (baseDataset as BaseDataset).getSubset(subsetId);
+        return { subsets, methods };
+    });
+}
+
+// updates the specific subset
+async function updateSubset(message: IParentMsg) {
+    await _functionWrapper(message, async (body) => {
+        const { subsetId, subset } = body?.content;
+        const { subsets } = (baseDataset as BaseDataset).updateSubset(subsetId, subset);
+        return { subsets };
+    });
+}
+
+// delete the subset
+async function deleteSubset(message: IParentMsg) {
+    await _functionWrapper(message, async (body) => {
+        const { subsetId } = body?.content;
+        const isDeleted = (baseDataset as BaseDataset).deleteSubset(subsetId);
+        return { subsets: { id: subsetId, isDeleted } };
+    });
+}
+
+//////////////////////////////////////////////////////
+// Method request handling
+//////////////////////////////////////////////////////
+
+// gets all methods
+async function getMethods(message: IParentMsg) {
+    await _functionWrapper(message, async () => {
+        const { methods } = (baseDataset as BaseDataset).getMethods();
+        return { methods };
+    });
+}
+
+// gets a specific method
+async function getMethod(message: IParentMsg) {
+    await _functionWrapper(message, async (body) => {
+        const { methodId } = body?.content;
+        const { methods, subsets } = (baseDataset as BaseDataset).getMethod(methodId);
+        return { methods, subsets };
+    });
+}
+
+// delete the method
+async function deleteMethod(message: IParentMsg) {
+    await _functionWrapper(message, async (body) => {
+        const { methodId } = body?.content;
+        const isDeleted = (baseDataset as BaseDataset).deleteMethod(methodId);
+        return { methods: { id: methodId, isDeleted } };
     });
 }

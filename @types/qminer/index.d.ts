@@ -54,12 +54,13 @@ declare module "qminer" {
         map(callback: any): any[];
         newRecord(obj: any): Record;
         newRecordSet(idVec: la.IntVector): RecordSet;
-        push(rec: any, triggerEvents?: boolean = true): number;
+        push(rec: { [key: string]: any }, triggerEvents?: boolean = true): number;
         recordByName(recName: string): Record | null;
         resetStreamAggreates(): void;
         sample(sampleSize: number): RecordSet;
         toJson(): { [key: any]: any };
         triggerOnAddCallbacks(arg?: Record | number): void;
+        [id: number]: Record | null;
     }
 
     export class RecordSet {
@@ -67,17 +68,22 @@ declare module "qminer" {
         length: number;
         store: Store;
         weighted: boolean;
+        aggr(params: any): { [key: any]: any };
         clone(): RecordSet;
         deleteRecords(rs: RecordSet): RecordSet;
-        each(callback: any): RecordSet;
-        filter(callback: any): RecordSet;
-        filterByField(fieldName: string, minVal: string | number, maxVal: number): RecordSet;
+        each(callback: (rec: Record) => void): RecordSet;
+        filter(callback: (rec: Record) => boolean): RecordSet;
+        filterByField(
+            fieldName: string,
+            minVal: string | number | boolean,
+            maxVal?: number
+        ): RecordSet;
         filterByFq(minFq?: number, maxFq?: number): RecordSet;
         filterById(minId?: number, maxId?: number): RecordSet;
         getMatrix(fieldName: string): la.Matrix | la.SparseMatrix;
         getVector(fieldName: string): la.Vector;
         join(joinName: string, sampleSize?: number): RecordSet;
-        map(callback: any): any[];
+        map(callback: (rec: Record) => any): any[];
         reverse(): RecordSet;
         sample(num: number): RecordSet;
         setDiff(rs: RecordSet): RecordSet;
@@ -91,6 +97,7 @@ declare module "qminer" {
         split(callback: number): RecordSet[];
         toJSON(): { [key: any]: any };
         trunc(limit_num: number, offset_num?: number): RecordSet;
+        [id: number]: Record | null;
     }
 
     export class Record {
@@ -105,7 +112,8 @@ declare module "qminer" {
             joinRecords?: boolean = false,
             joinRecordFields?: boolean = false,
             sysFields?: boolean = true
-        ): { [key: any]: any };
+        ): { [key: string]: any };
+        [key: string]: any;
     }
 
     export class RecordVector {
@@ -1873,13 +1881,8 @@ declare module "qminer" {
     // Shared component definitions
     /////////////////////////////////////////////
 
-    enum BaseModes {
-        "createClean",
-        "open",
-    }
-
     export interface BaseParams {
-        mode: BaseModes;
+        mode: string;
         dbPath: string;
         schema?: any;
     }

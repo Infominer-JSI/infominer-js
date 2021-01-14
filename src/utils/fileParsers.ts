@@ -17,7 +17,7 @@ import {
     REGEX_NUMBER,
     ID2LABEL,
     LABEL2ID,
-} from "../config/defaults";
+} from "../config/static";
 
 // get the file rows
 async function getFileRows(filepath: string, nRows?: number) {

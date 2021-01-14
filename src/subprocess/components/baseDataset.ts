@@ -1,39 +1,97 @@
-import { IField } from "../../interfaces";
+import {
+    IField,
+    EBaseMode,
+    IBaseDatasetParams,
+    IBaseDatasetField,
+    IFileMetadata,
+    EAggregateType,
+    ISubsetCreateParams,
+    ISubsetUpdateParams,
+    IBaseDatasetUpdateParams,
+} from "../../interfaces";
+
+// static values
+import { ID2LABEL, LABEL2ID, ID2TYPE, TYPE2ID } from "../../config/static";
 
 import qm from "qminer";
 import fs from "fs";
 import path from "path";
-import { createDirectory } from "../../utils/FileSystem";
-import { LABEL2ID, ID2TYPE } from "../../config/defaults";
+import parse from "csv-parse";
+// directory creation functions
+import { createDirectory, removeFile } from "../../utils/FileSystem";
+
+// import formatter
+import formatter from "./formatter";
+
+// import subset and model managers
+import SubsetManager from "./subsetManager";
+import MethodManager from "./methodManager";
+
+// initialize subset and model managers
+const subsetManager = new SubsetManager(formatter);
+const methodManager = new MethodManager(formatter);
 
 export default class BaseDataset {
-    private stopwords: string[];
-    private params: any;
     private base: qm.Base | undefined;
+    private dbpath: string;
+    private fields: IBaseDatasetField[];
+    private preprocessing: IBaseDatasetParams["preprocessing"];
 
-    constructor(params: any) {
-        this.stopwords = [];
-        this.params = params;
-        this._loadBase(this.params.fields);
+    public metadata: IBaseDatasetParams["metadata"];
+
+    constructor(params: IBaseDatasetParams) {
+        // initialize all required parameters
+        this.dbpath = params.dbpath;
+        // load the database
+        this._loadBase(params.mode, params.fields);
+        // load the field metadata
+        this.fields = this._getFieldMetadata();
+        // store preprocessing information
+        this.preprocessing = {
+            stopwords: {
+                language: "en",
+                words: [""],
+            },
+            ...params.preprocessing,
+        };
+        // contains database metadata
+        this.metadata = params.metadata;
     }
 
-    // load base
-    _loadBase(fields: IField[]) {
-        if (this.params.mode === "createClean") {
-            createDirectory(this.params.dbpath);
-            const schema = this._prepareSchema(fields);
-            this.base = new qm.Base({ mode: this.params.mode, dbPath: this.params.dbpath, schema });
-        } else if (this.params.mode === "open") {
-            this.base = new qm.Base({ mode: this.params.mode, dbPath: this.params.dbpath });
+    /////////////////////////////////////////////
+    // BASE HANDLERS
+    /////////////////////////////////////////////
+
+    /**
+     * Loads the base.
+     * @param mode - The mode in which the base is created.
+     * @param fields - The user defined fields.
+     */
+    _loadBase(mode: EBaseMode, fields?: IField[]) {
+        // the base is held in its `db` folder
+        const dbPath = path.resolve(this.dbpath, "db");
+        if (mode === EBaseMode.CREATE_CLEAN) {
+            // create a new QMiner base
+            createDirectory(dbPath);
+            const schema = this._prepareSchema(fields as IField[]);
+            this.base = new qm.Base({ mode, dbPath, schema });
+        } else if (mode === EBaseMode.OPEN) {
+            // remove any possible lock files in the database
+            removeFile(path.resolve(dbPath, "lock"));
+            // open an existing QMiner base
+            this.base = new qm.Base({ mode, dbPath });
         } else {
-            // TODO: handle error
+            throw Error("invalid base mode");
         }
     }
 
-    // prepare base schema
+    /**
+     * Prepares base schema.
+     * @param fields - The user defined fields.
+     */
     _prepareSchema(fields: IField[]) {
         // read the file and parse it as a json
-        const file = fs.readFileSync(path.resolve(__dirname, "schema", "dataset"), "utf8");
+        const file = fs.readFileSync(path.resolve(__dirname, "schema", "dataset.json"), "utf8");
         const schema = JSON.parse(file);
 
         // assign the fields
@@ -64,9 +122,141 @@ export default class BaseDataset {
         return schema;
     }
 
-    // prepares the record from the row
-    _prepareRecord(values: string[], fields: IField[]) {
-        const record: { [key: string]: string | number | string[] | null } = {};
+    /** Prepares the base field metadata. */
+    _getFieldMetadata() {
+        // get the field metadata
+        const fields = this.base?.store("Dataset").fields as IBaseDatasetField[];
+        fields.forEach((field) => {
+            switch (ID2LABEL[TYPE2ID[field.type]]) {
+                case "number":
+                    field.aggregate = EAggregateType.HISTOGRAM;
+                    break;
+                case "text":
+                    field.aggregate = EAggregateType.KEYWORDS;
+                    break;
+                case "category":
+                    field.aggregate = EAggregateType.HIERARCHY;
+                    break;
+                case "datetime":
+                    field.aggregate = EAggregateType.TIMELINE;
+                    break;
+                default:
+                    break;
+            }
+        });
+        return fields;
+    }
+
+    /** Closes the base. */
+    close() {
+        this.base?.close();
+    }
+
+    /** Gets the dataset ID. */
+    getID() {
+        return this.metadata.id;
+    }
+
+    /**
+     * Updates the dataset metadata.
+     * @param dataset - The dataset metadata.
+     */
+    updateDataset(dataset: IBaseDatasetUpdateParams) {
+        for (const [key, value] of Object.entries(dataset)) {
+            switch (key) {
+                case "name":
+                    this.metadata[key] = value as string;
+                    break;
+                case "description":
+                    this.metadata[key] = value as string | null;
+                    break;
+                default:
+                    break;
+            }
+        }
+        // return the updated metadata
+        return this.metadata;
+    }
+
+    /**
+     * Gets the dataset metadata, subsets and methods.
+     */
+    getDataset() {
+        return {
+            dataset: {
+                type: "dataset",
+                ...this.metadata,
+                nDocuments: this.base?.store("Dataset").length,
+            },
+            ...subsetManager.getSubsets(this.base as qm.Base),
+            ...methodManager.getMethods(this.base as qm.Base),
+        };
+    }
+
+    /////////////////////////////////////////////
+    // RECORD HANDLERS
+    /////////////////////////////////////////////
+
+    /**
+     * Populates the base with the examples in the file.
+     * @param file - The object containing the dataset metadata.
+     */
+    populateBase(file: IFileMetadata) {
+        return new Promise<boolean>((resolve, reject) => {
+            // prepare the parser
+            const parser = parse({
+                delimiter: file.delimiter,
+                trim: true,
+                skip_lines_with_error: true,
+            });
+            // handle each readable row
+            parser.on("readable", () => {
+                let record;
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                while ((record = parser.read())) {
+                    // prepare and push record to dataset
+                    const rec = this._formatRecord(record, file.fields);
+                    this.base?.store("Dataset").push(rec);
+                }
+            });
+            // handle parser errors
+            parser.on("error", (error) => {
+                return reject(error);
+            });
+            // handle on parser end
+            parser.on("end", () => {
+                // prepare subset metadata
+                const subset = {
+                    label: "root",
+                    description: "The root subset. Contains all records of the dataset.",
+                    documents: this.base?.store("Dataset").allRecords,
+                };
+                // create a subset record
+                this.createSubset(subset);
+                return resolve(true);
+            });
+            // read file and skip first line
+            const fileIn = qm.fs.openRead(file.filepath);
+            fileIn.readLine();
+
+            // go through the whole file and parse it
+            while (!fileIn.eof) {
+                // add end-of-line tag for the parser
+                const line = fileIn.readLine() + "\n";
+                parser.write(line);
+            }
+            // close the parser
+            parser.end();
+        });
+    }
+
+    /**
+     * Formats the record for the base.
+     * @param values - The record values.
+     * @param fields - The base fields.
+     */
+    _formatRecord(values: string[], fields: IField[]) {
+        const record: { [key: string]: number | number[] | string | string[] | null } = {};
         for (let i = 0; i < fields.length; i++) {
             const value = values[i];
             const field = fields[i];
@@ -77,24 +267,120 @@ export default class BaseDataset {
         return record;
     }
 
-    // parse field
+    /**
+     * Parses the value based on its type.
+     * @param value - The record value.
+     * @param type - The value type.
+     */
     _parseValue(value: string, type: string) {
+        // handle empty values
+        if (this._isValueEmpty(value)) {
+            return null;
+        }
+        // otherwise parse the value based on its type
         switch (type) {
             case "text":
-                return value && value !== "" ? value : null;
+                return value;
             case "number":
-                return value && value !== "" ? parseFloat(value) : null;
+                return parseFloat(value);
             case "datetime":
-                return value && value !== "" ? new Date(value).toISOString() : null;
+                return new Date(value).toISOString();
             case "category":
-                return value && value !== "" ? value.split(/[\\/]/g) : null;
+                return value.split(/[\\/]/g);
             default:
                 throw new Error('Type is not "text", "number", "datetime" or "category"');
         }
     }
 
-    // close the database
-    close() {
-        this.base?.close();
+    /**
+     * Checks if the value is empty.
+     * @param value - The value.
+     */
+    _isValueEmpty(value: string) {
+        return value === null || value === "";
+    }
+
+    /////////////////////////////////////////////
+    // SUBSET HANDLERS
+    /////////////////////////////////////////////
+
+    /**
+     * Gets all subsets.
+     */
+    getSubsets() {
+        return subsetManager.getSubsets(this.base as qm.Base);
+    }
+
+    /**
+     * Creates a new subset and its statistics method.
+     * @param subset - Subset metadata.
+     */
+    createSubset(subset: ISubsetCreateParams) {
+        // create the subset record
+        const subsetId = subsetManager.createSubset(this.base as qm.Base, subset);
+        // calculate the statistics of the subset
+        methodManager.aggregates(this.base as qm.Base, subsetId, this.fields);
+        // return the subset metadata
+        return this.getSubset(subsetId);
+    }
+
+    /**
+     * Gets the specific subset.
+     * @param subsetId - The subset ID.
+     */
+    getSubset(subsetId: number) {
+        return subsetManager.getSubset(this.base as qm.Base, subsetId);
+    }
+
+    /**
+     * Updates the subset with the new metadata.
+     * @param subsetId - The Subset ID.
+     * @param subset - The subset metadata.
+     */
+    updateSubset(subsetId: number, subset: ISubsetUpdateParams) {
+        return subsetManager.updateSubset(this.base as qm.Base, subsetId, subset);
+    }
+
+    /**
+     * Deletes the subset and all its associated methods.
+     * @param subsetId - The subset ID.
+     */
+    deleteSubset(subsetId: number) {
+        return subsetManager.deleteSubset(
+            this.base as qm.Base,
+            subsetId,
+            methodManager.deleteMethod.bind(methodManager)
+        );
+    }
+
+    /////////////////////////////////////////////
+    // METHOD HANDLERS
+    /////////////////////////////////////////////
+
+    /**
+     * Gets all methods.
+     */
+    getMethods() {
+        return methodManager.getMethods(this.base as qm.Base);
+    }
+
+    /**
+     * Gets a specific method.
+     * @param methodId - The method ID.
+     */
+    getMethod(methodId: number) {
+        return methodManager.getMethod(this.base as qm.Base, methodId);
+    }
+
+    /**
+     * Deletes the methods and all its assocaited subsets.
+     * @param methodId - The method ID.
+     */
+    deleteMethod(methodId: number) {
+        return methodManager.deleteMethod(
+            this.base as qm.Base,
+            methodId,
+            subsetManager.deleteSubset.bind(subsetManager)
+        );
     }
 }

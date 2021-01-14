@@ -6,7 +6,13 @@
  */
 
 // Import interfaces
-import { TGeneralCallback, TRequestCallback, EParentCmd, IProcessSendParams } from "../interfaces";
+import {
+    TGeneralCallback,
+    TRequestCallback,
+    EParentCmd,
+    IProcessSendParams,
+    EBaseMode,
+} from "../interfaces";
 import { Request, Response, NextFunction } from "express";
 
 // Import modules
@@ -14,7 +20,7 @@ import path from "path";
 
 // import utils
 import ProcessControl from "./ProcessControl";
-import { ServerError } from "./ErrorDefs";
+import { BadRequest, ServerError } from "./ErrorDefs";
 
 // import models
 import DatasetModel from "../models/dataset.model";
@@ -41,17 +47,33 @@ const processControl = new ProcessControl({
 // send a message to the child process
 const _initProcess = async (childId: number, owner: string, callback: TGeneralCallback<any>) => {
     try {
-        // // TODO: get the dataset metadata used to open it
-        // const records = await datasetModel.getDatasets({ id: childId, owner });
-        // if (records.length !== 1) {
-        //     throw new Error(`Multiple or none results found: ${records.length}`);
-        // }
-        // // get the dataset parameters
-        // const [{ name, description, created, dbpath, parameters, file }] = records;
+        // TODO: get the dataset metadata used to open it
+        const records = await datasetModel.getDatasets({ id: childId, owner });
+        if (records.length > 1) {
+            throw new ServerError(`more than one record found`);
+        } else if (records.length === 0) {
+            throw new BadRequest(`No records found | id=${childId}`);
+        }
+
+        // get the dataset parameters
+        const [{ name, description, created, dbpath, parameters, file }] = records;
 
         const params = {
-            cmd: EParentCmd.INIT,
-            message: {},
+            cmd: EParentCmd.OPEN_DATASET,
+            content: {
+                file,
+                dataset: {
+                    mode: EBaseMode.OPEN,
+                    dbpath,
+                    metadata: {
+                        id: childId,
+                        name,
+                        description,
+                        created,
+                    },
+                    preprocessing: parameters,
+                },
+            },
         };
         // initialize the child process
         processControl.createChild(childId);
@@ -89,13 +111,13 @@ const generalUserResponse = (_req: Request, res: Response, next: NextFunction) =
 ) => (error ? next(new ServerError(error.message)) : res.status(200).json(results));
 
 // creates a general request wrapper
-function generalRequestWrapper(
+async function generalRequestWrapper(
     req: Request,
     res: Response,
     next: NextFunction,
     callback: TRequestCallback
 ) {
-    const { id, owner, cmd, content } = callback();
+    const { id, owner, cmd, content } = await callback();
     const message = { cmd, content };
     sendToProcess(id, owner, message, generalUserResponse(req, res, next));
 }
@@ -107,7 +129,13 @@ function createDatasetProcess(
     callback: TGeneralCallback<any>
 ) {
     processControl.createChild(childId);
-    processControl.sendAndWait(childId, message, callback);
+    processControl.sendAndWait(childId, { cmd: EParentCmd.INIT }, (error) => {
+        if (error) {
+            console.log(error);
+            return callback(error);
+        }
+        processControl.sendAndWait(childId, message, callback);
+    });
 }
 
 // delete the dataset process
