@@ -107,6 +107,13 @@ export enum EBaseMode {
     OPEN = "open",
 }
 
+export interface IBaseProcessing {
+    stopwords: {
+        language: string;
+        words: string[];
+    };
+}
+
 export interface IBaseDatasetParams {
     mode: EBaseMode;
     dbpath: string;
@@ -117,7 +124,7 @@ export interface IBaseDatasetParams {
         description: string | null;
         created: string;
     };
-    preprocessing?: {
+    processing: {
         stopwords?: {
             language?: string;
             words?: string[];
@@ -133,9 +140,11 @@ export interface IFileMetadata {
 
 export interface IBaseDatasetField extends qm.IField {
     aggregate?: string;
+    group: string;
 }
 
 export enum EAggregateType {
+    COUNT = "count",
     HIERARCHY = "hierarchy",
     HISTOGRAM = "histogram",
     KEYWORDS = "keywords",
@@ -173,10 +182,17 @@ export interface ISubsetRecordSet extends qm.RecordSet {
     [key: number]: ISubsetRecord;
 }
 
+export enum EMethodStatus {
+    IN_QUEUE = "IN_QUEUE",
+    LOADING = "LOADING",
+    FINISHED = "FINISHED",
+}
+
 export interface IMethodRecord extends qm.Record {
     type: string;
     parameters: { [key: string]: any };
     result: null | { [key: string]: any };
+    status: EMethodStatus;
     modified: boolean;
     deleted: boolean;
     produced: ISubsetRecordSet | null;
@@ -196,7 +212,7 @@ export interface IMethodRecordSet extends qm.RecordSet {
 
 export interface ISubsetCreateParams {
     label: string;
-    description: string;
+    description?: string;
     resultedIn?: qm.Record;
     documents?: qm.RecordSet;
 }
@@ -209,6 +225,31 @@ export interface ISubsetUpdateParams {
 //////////////////////////////////////////////////////
 // Method interface
 //////////////////////////////////////////////////////
+
+export enum EMethodType {
+    AGGREGATE = "aggregate.subset",
+    CLUSTERING_KMEANS = "clustering.kmeans",
+}
+
+export interface IProcessing {
+    stopwords?: {
+        language?: string;
+        words?: string[];
+    };
+    [key: string]: any;
+}
+
+export interface IMethodCreateParams {
+    type: string;
+    parameters: {
+        subsetId: number;
+        fields?: string[];
+        processing: IProcessing;
+        method?: {
+            [key: string]: any;
+        };
+    };
+}
 
 export interface IHierarchyObject {
     name: string;
@@ -236,6 +277,7 @@ export interface IMethodFormatter {
     id: number;
     type: string;
     method: string;
+    status: EMethodStatus;
     parameters: any;
     result: any;
     produced: number[] | null;

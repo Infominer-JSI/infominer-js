@@ -96,6 +96,9 @@ function messageHandler(message: IParentMsg) {
         case EParentCmd.GET_METHOD:
             getMethod(message);
             break;
+        case EParentCmd.CREATE_METHOD:
+            createMethod(message);
+            break;
         case EParentCmd.DELETE_METHOD:
             deleteMethod(message);
             break;
@@ -179,14 +182,14 @@ async function createDataset(message: IParentMsg) {
 // opens the dataset
 async function openDataset(message: IParentMsg) {
     await _functionWrapper(message, async (body) => {
-        const { file, dataset } = body?.content;
-        baseDataset = new BaseDataset({ fields: file.fields, ...dataset });
-        // return the dataset ID
-        return { dataset: baseDataset.metadata };
+        const { file, dataset: data } = body?.content;
+        baseDataset = new BaseDataset({ fields: file.fields, ...data });
+        const { dataset, subsets, methods } = baseDataset.getDataset();
+        return { dataset, subsets, methods };
     });
 }
 
-// updates the dataset
+// gets the dataset
 async function getDataset(message: IParentMsg) {
     await _functionWrapper(message, async () => {
         const { dataset, subsets, methods } = (baseDataset as BaseDataset).getDataset();
@@ -251,6 +254,15 @@ async function getMethods(message: IParentMsg) {
     await _functionWrapper(message, async () => {
         const { methods } = (baseDataset as BaseDataset).getMethods();
         return { methods };
+    });
+}
+
+// creates a new method
+async function createMethod(message: IParentMsg) {
+    await _functionWrapper(message, async (body) => {
+        const { method } = body?.content;
+        const { methods, subsets } = await (baseDataset as BaseDataset).createMethod(method);
+        return { methods, subsets };
     });
 }
 

@@ -1,14 +1,14 @@
 /***********************************************
- * Request Converters
- * This middlewares convert the request
- * parameters to the appropriate type.
+ * Request Validators
+ * This middlewares validates and converts the
+ * request parameters to the appropriate type.
  */
 
 // import utils
 import { param } from "express-validator";
 
 // //////////////////////////////////////////////
-// Export converters
+// EXPORT VALIDATORS
 // //////////////////////////////////////////////
 
 export const datasets = [param("datasetId").toInt()];

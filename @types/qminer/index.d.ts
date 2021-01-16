@@ -623,6 +623,7 @@ declare module "qminer" {
             toString(): string;
             trunc(idx: number): la.Vector;
             unshift(...args: number): number;
+            [key: number]: number;
         }
 
         /** The Sparse Vector */
@@ -693,6 +694,7 @@ declare module "qminer" {
             toString(): string;
             trunc(idx: number): la.IntVector;
             unshift(...args: number): number;
+            [key: number]: number | null;
         }
 
         /** The String Vector */
@@ -901,6 +903,7 @@ declare module "qminer" {
                 X: la.Matrix | la.SparseMatrix
             ): { medoidID: number; featureIDs: la.IntVector; featureContributions: la.Vector }[];
             fit(X: la.Matrix | la.SparseMatrix): analytics.KMeans;
+            fitAsync(X: la.Matrix | la.SparseMatrix, cb: (error?: Error) => void): void;
             getModel(): {
                 C: la.Matrix | la.SparseMatrix;
                 medoids: la.IntVector;

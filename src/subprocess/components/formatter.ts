@@ -41,6 +41,7 @@ export default {
         type: "method",
         method: rec.type,
         parameters: rec.parameters,
+        status: rec.status,
         // TODO: update the results based on the method
         result: rec.result,
         produced: rec.produced && !rec.produced.empty ? availableRecords(rec.produced) : null,

@@ -20,7 +20,7 @@ import config from "../config/config";
 import { Request } from "express";
 
 // //////////////////////////////////////////////
-// Configure logging logic
+// LOGGING CONFIGURATION
 // //////////////////////////////////////////////
 
 // create the temporary folder

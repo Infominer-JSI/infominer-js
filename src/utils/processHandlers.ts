@@ -45,14 +45,14 @@ const processControl = new ProcessControl({
 // //////////////////////////////////////////////
 
 // send a message to the child process
-const _initProcess = async (childId: number, owner: string, callback: TGeneralCallback<any>) => {
+const _initProcess = async (datasetId: number, owner: string, callback: TGeneralCallback<any>) => {
     try {
         // TODO: get the dataset metadata used to open it
-        const records = await datasetModel.getDatasets({ id: childId, owner });
+        const records = await datasetModel.getDatasets({ id: datasetId, owner });
         if (records.length > 1) {
-            throw new ServerError(`more than one record found`);
+            throw new ServerError(`More than one record found; datasetId=${datasetId}`);
         } else if (records.length === 0) {
-            throw new BadRequest(`No records found | id=${childId}`);
+            throw new BadRequest(`No records found; datasetId=${datasetId}`);
         }
 
         // get the dataset parameters
@@ -66,19 +66,19 @@ const _initProcess = async (childId: number, owner: string, callback: TGeneralCa
                     mode: EBaseMode.OPEN,
                     dbpath,
                     metadata: {
-                        id: childId,
+                        id: datasetId,
                         name,
                         description,
                         created,
                     },
-                    preprocessing: parameters,
+                    processing: parameters,
                 },
             },
         };
         // initialize the child process
-        processControl.createChild(childId);
+        processControl.createChild(datasetId);
         // send the message to the child process
-        processControl.sendAndWait(childId, params, callback);
+        processControl.sendAndWait(datasetId, params, callback);
     } catch (error) {
         callback(error);
     }
@@ -87,20 +87,20 @@ const _initProcess = async (childId: number, owner: string, callback: TGeneralCa
 // send the message to the child process and on response
 // handles it with the given callback function
 const sendToProcess = (
-    childId: number,
+    datasetId: number,
     owner: string,
     message: IProcessSendParams,
     callback: TGeneralCallback<any>
 ) => {
     // the intermediate function used to send messages
     const sendMessage = (error?: Error) => {
-        return error ? callback(error) : processControl.sendAndWait(childId, message, callback);
+        return error ? callback(error) : processControl.sendAndWait(datasetId, message, callback);
     };
 
-    if (processControl.doesChildExist(childId)) {
+    if (processControl.doesChildExist(datasetId)) {
         sendMessage();
     } else {
-        _initProcess(childId, owner, sendMessage).catch(console.log);
+        _initProcess(datasetId, owner, sendMessage).catch(console.log);
     }
 };
 
@@ -108,7 +108,7 @@ const sendToProcess = (
 const generalUserResponse = (_req: Request, res: Response, next: NextFunction) => (
     error?: Error,
     results?: any
-) => (error ? next(new ServerError(error.message)) : res.status(200).json(results));
+) => (error ? next(error) : res.status(200).json(results));
 
 // creates a general request wrapper
 async function generalRequestWrapper(
@@ -124,17 +124,17 @@ async function generalRequestWrapper(
 
 // create the dataset process
 function createDatasetProcess(
-    childId: number,
+    datasetId: number,
     message: IProcessSendParams,
     callback: TGeneralCallback<any>
 ) {
-    processControl.createChild(childId);
-    processControl.sendAndWait(childId, { cmd: EParentCmd.INIT }, (error) => {
+    processControl.createChild(datasetId);
+    processControl.sendAndWait(datasetId, { cmd: EParentCmd.INIT }, (error) => {
         if (error) {
             console.log(error);
             return callback(error);
         }
-        processControl.sendAndWait(childId, message, callback);
+        processControl.sendAndWait(datasetId, message, callback);
     });
 }
 

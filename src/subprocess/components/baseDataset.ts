@@ -8,10 +8,15 @@ import {
     ISubsetCreateParams,
     ISubsetUpdateParams,
     IBaseDatasetUpdateParams,
+    EMethodType,
+    IMethodCreateParams,
+    IBaseProcessing,
+    EMethodStatus,
+    IMethodRecord,
 } from "../../interfaces";
 
 // static values
-import { ID2LABEL, LABEL2ID, ID2TYPE, TYPE2ID } from "../../config/static";
+import { LABEL2ID, ID2TYPE } from "../../config/static";
 
 import qm from "qminer";
 import fs from "fs";
@@ -35,9 +40,8 @@ export default class BaseDataset {
     private base: qm.Base | undefined;
     private dbpath: string;
     private fields: IBaseDatasetField[];
-    private preprocessing: IBaseDatasetParams["preprocessing"];
-
-    public metadata: IBaseDatasetParams["metadata"];
+    private processing: IBaseProcessing;
+    private metadata: IBaseDatasetParams["metadata"];
 
     constructor(params: IBaseDatasetParams) {
         // initialize all required parameters
@@ -45,14 +49,14 @@ export default class BaseDataset {
         // load the database
         this._loadBase(params.mode, params.fields);
         // load the field metadata
-        this.fields = this._getFieldMetadata();
+        this.fields = this._getFieldMetadata(params.fields);
         // store preprocessing information
-        this.preprocessing = {
+        this.processing = {
             stopwords: {
                 language: "en",
                 words: [""],
+                ...params.processing.stopwords,
             },
-            ...params.preprocessing,
         };
         // contains database metadata
         this.metadata = params.metadata;
@@ -80,8 +84,18 @@ export default class BaseDataset {
             removeFile(path.resolve(dbPath, "lock"));
             // open an existing QMiner base
             this.base = new qm.Base({ mode, dbPath });
+            // clean any unprocessed methods
+            const methodRecs = this.base.store("Methods").allRecords;
+            methodRecs
+                .filter((rec) =>
+                    [EMethodStatus.IN_QUEUE, EMethodStatus.LOADING].includes(rec.status)
+                )
+                .each((rec) => {
+                    rec.status = EMethodStatus.FINISHED;
+                    rec.deleted = true;
+                });
         } else {
-            throw Error("invalid base mode");
+            throw Error(`Invalid base mode; mode=${mode}`);
         }
     }
 
@@ -123,16 +137,23 @@ export default class BaseDataset {
     }
 
     /** Prepares the base field metadata. */
-    _getFieldMetadata() {
+    _getFieldMetadata(fileFields: IField[]) {
         // get the field metadata
-        const fields = this.base?.store("Dataset").fields as IBaseDatasetField[];
+        const fields = this.base?.store("Dataset").fields.map((field) => {
+            const fileField = fileFields.filter((f) => f.name === field.name);
+            return { ...field, group: fileField[0].type };
+        }) as IBaseDatasetField[];
+        // add the field aggregates
         fields.forEach((field) => {
-            switch (ID2LABEL[TYPE2ID[field.type]]) {
+            switch (field.group) {
                 case "number":
                     field.aggregate = EAggregateType.HISTOGRAM;
                     break;
                 case "text":
                     field.aggregate = EAggregateType.KEYWORDS;
+                    break;
+                case "class":
+                    field.aggregate = EAggregateType.COUNT;
                     break;
                 case "category":
                     field.aggregate = EAggregateType.HIERARCHY;
@@ -155,6 +176,26 @@ export default class BaseDataset {
     /** Gets the dataset ID. */
     getID() {
         return this.metadata.id;
+    }
+
+    /** Gets the qminer base. */
+    getBase() {
+        return this.base;
+    }
+
+    /** Gets the base path. */
+    getDBPath() {
+        return this.dbpath;
+    }
+
+    /** Get the dataset metadata. */
+    getMetadata() {
+        return this.metadata;
+    }
+
+    /** Get the base fields. */
+    getFields() {
+        return this.fields;
     }
 
     /**
@@ -279,16 +320,17 @@ export default class BaseDataset {
         }
         // otherwise parse the value based on its type
         switch (type) {
-            case "text":
-                return value;
             case "number":
                 return parseFloat(value);
             case "datetime":
                 return new Date(value).toISOString();
             case "category":
                 return value.split(/[\\/]/g);
+            case "text":
+            case "class":
+                return value;
             default:
-                throw new Error('Type is not "text", "number", "datetime" or "category"');
+                throw new Error('Type is not "text", "class", "number", "datetime" or "category"');
         }
     }
 
@@ -315,11 +357,15 @@ export default class BaseDataset {
      * Creates a new subset and its statistics method.
      * @param subset - Subset metadata.
      */
-    createSubset(subset: ISubsetCreateParams) {
+    async createSubset(subset: ISubsetCreateParams) {
         // create the subset record
         const subsetId = subsetManager.createSubset(this.base as qm.Base, subset);
         // calculate the statistics of the subset
-        methodManager.aggregates(this.base as qm.Base, subsetId, this.fields);
+        await methodManager.createMethod(
+            this.base as qm.Base,
+            { type: EMethodType.AGGREGATE, parameters: { subsetId, processing: this.processing } },
+            this.fields
+        );
         // return the subset metadata
         return this.getSubset(subsetId);
     }
@@ -373,6 +419,36 @@ export default class BaseDataset {
     }
 
     /**
+     * Creates a new method.
+     * @param method - The method parameters.
+     */
+    async createMethod(method: IMethodCreateParams) {
+        // update the method parameters with the base processing
+        const stopwords = this.processing.stopwords;
+        if (method.parameters.processing?.stopwords?.words) {
+            stopwords.words.push(...method.parameters.processing.stopwords.words);
+        }
+        // override the method with the combination of default and method specific stopwords
+        method.parameters.processing.stopwords = stopwords;
+        // create a new method
+        const { methods } = await methodManager.createMethod(
+            this.base as qm.Base,
+            method,
+            this.fields
+        );
+        // create the subsets
+        if (methods.status === EMethodStatus.FINISHED) {
+            switch (methods.type) {
+                case EMethodType.CLUSTERING_KMEANS:
+                    await this._clusteringKMeansSubsets(methods);
+                    break;
+            }
+        }
+        // return the created method
+        return this.getMethod(methods.$id);
+    }
+
+    /**
      * Deletes the methods and all its assocaited subsets.
      * @param methodId - The method ID.
      */
@@ -382,5 +458,29 @@ export default class BaseDataset {
             methodId,
             subsetManager.deleteSubset.bind(subsetManager)
         );
+    }
+
+    /**
+     * Creates a subset for each cluster.
+     * @param method - The method record.
+     */
+    async _clusteringKMeansSubsets(method: IMethodRecord) {
+        const result = method.result;
+        for (const cluster of result?.clusters) {
+            // get the cluster documents
+            const documents = this.base
+                ?.store("Dataset")
+                .newRecordSet(new qm.la.IntVector(cluster.docIds));
+            // create the new subset
+            const { subsets } = await this.createSubset({
+                label: "Cluster",
+                resultedIn: method,
+                documents,
+            });
+            // assign the subset ID to the cluster
+            cluster.subsetId = subsets.id;
+        }
+        // reassign the results
+        method.result = result;
     }
 }

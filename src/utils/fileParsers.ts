@@ -17,6 +17,7 @@ import {
     REGEX_NUMBER,
     ID2LABEL,
     LABEL2ID,
+    REGEX_CLASS,
 } from "../config/static";
 
 // get the file rows
@@ -69,12 +70,15 @@ export async function parseDelimiter(filepath: string, delimiters = [",", ";", "
 
 function validateValue(value: string) {
     const category = value.match(REGEX_CATEGORY);
+    const xclass = value.match(REGEX_CLASS);
     if (!value.match(REGEX_NUMBER)) {
         return LABEL2ID.number;
     } else if (Date.parse(value)) {
         return LABEL2ID.datetime;
     } else if (category && category.length === 1 && category[0] === value) {
         return LABEL2ID.category;
+    } else if (xclass && xclass.length === 1 && xclass[0] === value) {
+        return LABEL2ID.class;
     } else {
         return LABEL2ID.text;
     }
