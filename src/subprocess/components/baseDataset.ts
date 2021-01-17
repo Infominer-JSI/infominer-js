@@ -436,10 +436,11 @@ export default class BaseDataset {
             method,
             this.fields
         );
-        // create the subsets
+        // if the method is finished: create the subsets
         if (methods.status === EMethodStatus.FINISHED) {
             switch (methods.type) {
                 case EMethodType.CLUSTERING_KMEANS:
+                    // create the cluster subsets
                     await this._clusteringKMeansSubsets(methods);
                     break;
             }
@@ -473,7 +474,10 @@ export default class BaseDataset {
                 .newRecordSet(new qm.la.IntVector(cluster.docIds));
             // create the new subset
             const { subsets } = await this.createSubset({
-                label: "Cluster",
+                label: cluster.topVals
+                    .slice(0, 4)
+                    .map((obj: any) => obj.value)
+                    .join(", "),
                 resultedIn: method,
                 documents,
             });

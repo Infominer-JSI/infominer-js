@@ -137,13 +137,13 @@ declare module "qminer" {
          * @param base - The base where the features are extracted from.
          * @param args - The contruction arguments.
          */
-        constructor(base: Base, args: IFeatureExtractor[] | fs.FIn);
+        constructor(base: Base, args: any[] | fs.FIn);
         /**
          * Adds a new feature extractor to the feature space.
          * @param ftExt - The feature extractor.
          * @returns Self.
          */
-        addFeatureExtractor(ftExt: IFeatureExtractor): FeatureSpace;
+        addFeatureExtractor(ftExt: any): FeatureSpace;
         /**
          * Updates the feature space values by processing the given record.
          * @param rec - The record using to update the feature space.
@@ -676,7 +676,7 @@ declare module "qminer" {
             /** Length of the vector. */
             length: number;
             /** Creates a new instance of the Integer Vector */
-            constructor(arg: number[] | la.IntVector);
+            constructor(arg?: number[] | la.IntVector);
             at(idx: number): number;
             getMaxIdx(): number;
             load(fin: fs.FIn): la.IntVector;

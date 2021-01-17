@@ -3,24 +3,28 @@ import qm from "qminer";
 import {
     EMethodStatus,
     EMethodType,
-    IMethodCreateParams,
+    IAggregatesModelParams,
+    IALearnModelParams,
+    IGenericModelParams,
+    IKMeansModelParams,
     IMethodRecord,
     ISubsetRecord,
 } from "../../../interfaces";
 
+type paramType =
+    | IGenericModelParams
+    | IKMeansModelParams
+    | IAggregatesModelParams
+    | IALearnModelParams;
+
 export default class ModelBasic {
     protected base: qm.Base;
     protected subset: ISubsetRecord;
-    protected params: IMethodCreateParams["parameters"];
+    protected params: paramType;
     protected type: EMethodType;
     protected method: IMethodRecord;
 
-    constructor(
-        base: qm.Base,
-        subset: ISubsetRecord,
-        params: IMethodCreateParams["parameters"],
-        type: EMethodType
-    ) {
+    constructor(base: qm.Base, subset: ISubsetRecord, params: paramType, type: EMethodType) {
         this.base = base;
         this.subset = subset;
         this.params = params;
@@ -47,7 +51,7 @@ export default class ModelBasic {
         throw new Error("Method 'update' is not implemented");
     }
 
-    clear() {
+    delete() {
         // clears and deletes the method
         this.method.deleted = true;
         this.method.status = EMethodStatus.FINISHED;
@@ -56,6 +60,10 @@ export default class ModelBasic {
 
     getMethod() {
         return this.method;
+    }
+
+    getType() {
+        return this.type;
     }
 
     save(fin: qm.fs.FIn) {

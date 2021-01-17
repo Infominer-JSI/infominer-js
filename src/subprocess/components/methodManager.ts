@@ -7,17 +7,23 @@ import {
     IMethodFormatter,
     IMethodCreateParams,
     EMethodType,
+    IMethodUpdateParams,
+    EMethodStep,
+    IKMeansModelParams,
+    IALearnModelParams,
+    IALearnUpdateParams,
 } from "../../interfaces";
 
 import qm from "qminer";
 import { BadRequest } from "../../utils/ErrorDefs";
 
+import ActiveLearning from "./models/ActiveLearning";
 import Aggregates from "./models/Aggregates";
-import ClusteringKMeans from "./models/ClusteringKMeans";
+import KMeansClustering from "./models/KMeansClustering";
 
 export default class MethodManager {
     private formatter: IFormatter;
-    private methods: { [key: string]: any };
+    private models: { [key: number]: Aggregates | KMeansClustering | ActiveLearning };
 
     /**
      * Creates a new MethodManager instance.
@@ -25,7 +31,7 @@ export default class MethodManager {
      */
     constructor(formatter: IFormatter) {
         this.formatter = formatter;
-        this.methods = {};
+        this.models = {};
     }
 
     /////////////////////////////////////////////
@@ -63,18 +69,58 @@ export default class MethodManager {
         let model;
         switch (method.type) {
             case EMethodType.AGGREGATE:
+                // create a new model instance
                 model = new Aggregates(base, subset, method.parameters, fields);
+                // initialize the model and train it
                 model.init().train();
                 break;
             case EMethodType.CLUSTERING_KMEANS:
-                model = new ClusteringKMeans(base, subset, method.parameters);
+                // create a new model instance
+                model = new KMeansClustering(base, subset, method.parameters as IKMeansModelParams);
+                // initialize the model and train it
                 await (await model.init()).train();
+                break;
+            case EMethodType.ACTIVE_LEARNING:
+                // create a new model instance
+                model = new ActiveLearning(
+                    base,
+                    subset,
+                    method.parameters as IALearnModelParams,
+                    this.formatter
+                );
+                // initialize the model
+                model.init();
                 break;
             default:
                 throw new BadRequest(`Invalid method type; type=${method.type}`);
         }
         // get the method metadata
         return { methods: model.getMethod() };
+    }
+
+    async updateMethod(base: qm.Base, methodId: number, params: IMethodUpdateParams) {
+        if (!this.models[methodId]) {
+            throw new BadRequest(`Invalid method id; id=${methodId}`);
+        }
+        // get the model to be updated
+        const model = this.models[methodId];
+        switch (params.step) {
+            case EMethodStep.TRAIN:
+                // train the model
+                await model.train();
+                // delete the model from the pending list
+                delete this.models[methodId];
+            case EMethodStep.UPDATE:
+                // update the model
+                switch (model.getType()) {
+                    case EMethodType.ACTIVE_LEARNING:
+                        await model.update(params.parameters as IALearnUpdateParams);
+                        break;
+                }
+                break;
+            default:
+                throw new BadRequest(`Invalid method step; step=${params.step}`);
+        }
     }
 
     /**

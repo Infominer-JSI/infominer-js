@@ -2,7 +2,7 @@ import {
     EMethodStatus,
     EMethodType,
     IBaseDatasetField,
-    IMethodCreateParams,
+    IAggregatesModelParams,
     IProcessing,
     ISubsetRecord,
 } from "../../../interfaces";
@@ -25,7 +25,7 @@ export default class Aggregates extends ModelBasic {
     constructor(
         base: qm.Base,
         subset: ISubsetRecord,
-        params: IMethodCreateParams["parameters"],
+        params: IAggregatesModelParams,
         fields: IBaseDatasetField[]
     ) {
         super(base, subset, params, EMethodType.AGGREGATE);

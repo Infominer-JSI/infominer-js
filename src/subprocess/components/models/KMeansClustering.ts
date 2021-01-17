@@ -1,9 +1,4 @@
-import {
-    EMethodStatus,
-    EMethodType,
-    IMethodCreateParams,
-    ISubsetRecord,
-} from "../../../interfaces";
+import { EMethodStatus, EMethodType, IKMeansModelParams, ISubsetRecord } from "../../../interfaces";
 
 import qm from "qminer";
 import ModelBasic from "./ModelBasic";
@@ -12,7 +7,7 @@ import ModelBasic from "./ModelBasic";
 import { promisify } from "util";
 const setImmediateP = promisify(setImmediate);
 
-export default class ClusteringKMeans extends ModelBasic {
+export default class KMeansClustering extends ModelBasic {
     private result: { [key: string]: any };
     private featureSpace: qm.FeatureSpace | null;
     private model: qm.analytics.KMeans | null;
@@ -23,15 +18,15 @@ export default class ClusteringKMeans extends ModelBasic {
      * @param subset - The subset.
      * @param params - The method parameters.
      */
-    constructor(base: qm.Base, subset: ISubsetRecord, params: IMethodCreateParams["parameters"]) {
+    constructor(base: qm.Base, subset: ISubsetRecord, params: IKMeansModelParams) {
         super(base, subset, params, EMethodType.CLUSTERING_KMEANS);
-        this.result = {};
         this.featureSpace = null;
         this.model = null;
+        this.result = {};
     }
 
     /** Initializes the model. */
-    async init(): Promise<ClusteringKMeans> {
+    async init(): Promise<KMeansClustering> {
         // create the feature space and update it with records
         const { features, distanceType } = this._setFeatures();
         this.featureSpace = new qm.FeatureSpace(this.base, features);
@@ -46,7 +41,7 @@ export default class ClusteringKMeans extends ModelBasic {
     }
 
     /** Trains the model. */
-    async train(): Promise<ClusteringKMeans> {
+    async train(): Promise<KMeansClustering> {
         // set the method status
         this.method.status = EMethodStatus.LOADING;
         // get the feature matrix and train the model
@@ -62,31 +57,37 @@ export default class ClusteringKMeans extends ModelBasic {
         return this;
     }
 
+    /** Get the method parameters. */
+    getParams() {
+        return this.params as IKMeansModelParams;
+    }
+
     /////////////////////////////////////////////
     // HELPER FUNCTIONS
     /////////////////////////////////////////////
 
     /** Set the clustering features */
     _setFeatures() {
+        // prepare placeholders
         let features: any[] = [];
-        let distanceType = "";
-        switch (this.params.method?.clusteringType) {
+        let distanceType: string;
+        // get the model parameters
+        const params = this.getParams();
+        switch (params.method.clusteringType) {
             case "text":
                 // clustering is performed on text fields
                 distanceType = "Cos";
                 features = [
                     {
                         type: "text",
-                        field: this.params.fields,
-                        ngrams: 2,
-                        hashDimension: 20000,
+                        field: params.fields,
+                        ngrams: 1,
                         tokenizer: {
                             type: "simple",
-                            stemmer: "porter",
                             stopwords: {
                                 language: "en",
                                 words: [""],
-                                ...this.params.processing?.stopwords,
+                                ...params.processing.stopwords,
                             },
                         },
                     },
@@ -99,14 +100,14 @@ export default class ClusteringKMeans extends ModelBasic {
             case "number":
                 // the clustering is performed on number fields
                 distanceType = "Euclid";
-                features = this.params.fields?.map((field) => ({
+                features = params.fields.map((field) => ({
                     type: "numeric",
                     field,
                 })) as { type: string; field: string }[];
                 break;
             default:
                 throw new Error(
-                    `Invalid clustering type; clusteringType=${this.params.method?.clusteringType}`
+                    `Invalid clustering type; clusteringType=${params.method.clusteringType}`
                 );
         }
         features.forEach((feature) => {
@@ -127,16 +128,20 @@ export default class ClusteringKMeans extends ModelBasic {
      * @param matrix - The document features.
      */
     _clusterStatistics(matrix: qm.la.SparseMatrix) {
+        // get the model parameters
+        const params = this.getParams();
         // prepare clusters statistics placeholder
-        const clusters = Array(...Array(this.params.method?.k)).map(() => ({
+        const clusters = Array(...Array(params.method?.k)).map(() => ({
             distance: {
                 max: -1,
                 min: -1,
-                avg: -1,
+                mean: -1,
+                std: -1,
             },
             count: -1,
             docIds: [] as number[],
             subsetId: -1,
+            topVals: [] as { value: string | number; weight: number }[],
         }));
         // get the subset elements
         const documents = this.subset.hasElements as qm.RecordSet;
@@ -149,29 +154,29 @@ export default class ClusteringKMeans extends ModelBasic {
             const clusterId = idxv[id] as number;
             const docId = (documents[id] as qm.Record).$id;
             clusters[clusterId].docIds.push(docId);
-            // save the cluster positions
+            // save the cluster document IDs
             if (!clusterIds[clusterId]) {
                 clusterIds[clusterId] = [];
             }
             clusterIds[clusterId].push(id);
         }
         // calculate the distances of the matrix
-        for (const [clusterId, docIds] of Object.entries(clusterIds)) {
-            const positions = new qm.la.IntVector(docIds);
-            const submatrix = matrix.getColSubmatrix(positions);
+        for (const [clusterId, ids] of Object.entries(clusterIds)) {
+            const docIds = new qm.la.IntVector(ids);
+            const submatrix = matrix.getColSubmatrix(docIds);
             const centroid = this.model?.centroids?.getCol(parseInt(clusterId)) as qm.la.Vector;
 
             // assign the number of documents in cluster
             clusters[parseInt(clusterId)].count = submatrix.cols;
 
             let dists = new qm.la.Vector();
-            if (this.params.method?.clusteringType === "text") {
+            if (params.method.clusteringType === "text") {
                 submatrix.normalizeCols();
                 centroid.normalize();
                 // get the cosine distances between the documents and centroid
                 dists = submatrix.multiplyT(centroid) as qm.la.Vector;
                 dists = qm.la.ones(dists.length).minus(dists);
-            } else if (this.params.method?.clusteringType === "number") {
+            } else if (params.method.clusteringType === "number") {
                 // calculate the Euclidean distances between the centroid and documents
                 for (let id = 0; id < submatrix.cols; id++) {
                     const subs = submatrix.getCol(id).full().minus(centroid);
@@ -183,10 +188,26 @@ export default class ClusteringKMeans extends ModelBasic {
                     dists.push(dist);
                 }
             }
-            // save the distances
-            clusters[parseInt(clusterId)].distance.avg = dists.sum() / submatrix.cols;
-            clusters[parseInt(clusterId)].distance.max = dists[dists.getMaxIdx()];
-            clusters[parseInt(clusterId)].distance.min = dists[dists.multiply(-1).getMaxIdx()];
+            // calculate the statistics
+            const mean = qm.statistics.mean(dists) as number;
+            const std = qm.statistics.std(dists) as number;
+            const max = dists[dists.getMaxIdx()];
+            const min = dists[dists.multiply(-1).getMaxIdx()];
+            clusters[parseInt(clusterId)].distance = { mean, std, max, min };
+
+            // get the top features of the centroid
+            const sort = centroid.sortPerm(false);
+            const limit = sort.perm.length < 10 ? sort.perm.length : 10;
+            for (let i = 0; i < limit; i++) {
+                // get the maximum weight
+                const [weight, id] = [sort.vec[i], sort.perm[i]];
+                const value = this.featureSpace?.getFeature(id) as string;
+                if (value === "Constant" || weight === 0) {
+                    // break when we get to the end of the feature list
+                    break;
+                }
+                clusters[parseInt(clusterId)].topVals.push({ value, weight });
+            }
         }
         // assign the clusters
         this.result.clusters = clusters;

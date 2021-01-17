@@ -229,6 +229,12 @@ export interface ISubsetUpdateParams {
 export enum EMethodType {
     AGGREGATE = "aggregate.subset",
     CLUSTERING_KMEANS = "clustering.kmeans",
+    ACTIVE_LEARNING = "classifier.active_learning",
+}
+
+export enum EMethodStep {
+    TRAIN = "train",
+    UPDATE = "update",
 }
 
 export interface IProcessing {
@@ -240,7 +246,7 @@ export interface IProcessing {
 }
 
 export interface IMethodCreateParams {
-    type: string;
+    type: EMethodType;
     parameters: {
         subsetId: number;
         fields?: string[];
@@ -248,6 +254,65 @@ export interface IMethodCreateParams {
         method?: {
             [key: string]: any;
         };
+    };
+}
+
+export interface IGenericModelParams {
+    subsetId: number;
+    fields?: string[];
+    processing: IProcessing;
+    method?: {
+        [key: string]: any;
+    };
+    [key: string]: any;
+}
+
+export interface IAggregatesModelParams extends IGenericModelParams {
+    subsetId: number;
+    processing: IProcessing;
+}
+
+export interface IKMeansModelParams extends IGenericModelParams {
+    fields: string[];
+    method: {
+        clusteringType: string;
+        k: number;
+    };
+}
+
+export interface IALearnModelParams extends IGenericModelParams {
+    fields: string[];
+    method: {
+        query: string;
+    };
+}
+
+export interface IALearnUpdateParams extends IGenericModelParams {
+    method: {
+        documents: {
+            labelled: [
+                {
+                    document: IDocumentFormatter;
+                    label: number;
+                }
+            ];
+            next: {
+                document: IDocumentFormatter;
+                label: number;
+            };
+        };
+    };
+}
+
+export interface IMethodUpdateParams {
+    step: EMethodStep;
+    parameters?: {
+        fields?: string[];
+        processing?: IProcessing;
+        method?: {
+            [key: string]: any;
+        };
+        [key: string]: any;
     };
 }
 

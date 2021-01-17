@@ -63,7 +63,7 @@ function _aggregatesByField(elements: qm.RecordSet, field: IBaseDatasetField, pa
             name: aggregate,
             field: fieldName,
             type: aggregate,
-            stemmer: "porter",
+            sample: elements.length,
             stopwords: params.stopwords,
         });
         if (statistics && statistics.keywords && !statistics.keywords.length) {
