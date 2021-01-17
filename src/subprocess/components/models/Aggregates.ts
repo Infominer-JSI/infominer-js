@@ -9,7 +9,7 @@ import {
 
 import qm from "qminer";
 import ModelBasic from "./ModelBasic";
-import { aggregates } from "../utils/utils";
+import { getAggregates } from "../utils/utils";
 
 export default class Aggregates extends ModelBasic {
     private result: { [key: string]: any };
@@ -41,10 +41,10 @@ export default class Aggregates extends ModelBasic {
     /** Trains the model. */
     train(): Aggregates {
         // set the method status
-        this.method.status = EMethodStatus.LOADING;
+        this.method.status = EMethodStatus.TRAINING;
         // get the aggregates of the subset
-        this.result.aggregates = aggregates(
-            this.subset,
+        this.result.aggregates = getAggregates(
+            this.subset.hasElements,
             this.fields,
             this.params.processing as IProcessing
         );

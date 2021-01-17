@@ -82,14 +82,11 @@ export default class MethodManager {
                 break;
             case EMethodType.ACTIVE_LEARNING:
                 // create a new model instance
-                model = new ActiveLearning(
-                    base,
-                    subset,
-                    method.parameters as IALearnModelParams,
-                    this.formatter
-                );
+                model = new ActiveLearning(base, subset, method.parameters as IALearnModelParams);
                 // initialize the model
-                model.init();
+                await model.init();
+                // save the model for further access
+                this.models[model.getMethod().$id] = model;
                 break;
             default:
                 throw new BadRequest(`Invalid method type; type=${method.type}`);
@@ -100,7 +97,7 @@ export default class MethodManager {
 
     async updateMethod(base: qm.Base, methodId: number, params: IMethodUpdateParams) {
         if (!this.models[methodId]) {
-            throw new BadRequest(`Invalid method id; id=${methodId}`);
+            throw new BadRequest(`Invalid method id (method cannot be updated); id=${methodId}`);
         }
         // get the model to be updated
         const model = this.models[methodId];
@@ -110,6 +107,7 @@ export default class MethodManager {
                 await model.train();
                 // delete the model from the pending list
                 delete this.models[methodId];
+                break;
             case EMethodStep.UPDATE:
                 // update the model
                 switch (model.getType()) {
@@ -121,6 +119,8 @@ export default class MethodManager {
             default:
                 throw new BadRequest(`Invalid method step; step=${params.step}`);
         }
+        // get the method metadata
+        return { methods: model.getMethod() };
     }
 
     /**
@@ -175,6 +175,13 @@ export default class MethodManager {
         if (!Number.isInteger(methodId)) {
             throw new BadRequest(`Invalid method; methodId=${methodId}`);
         }
+        if (this.models[methodId]) {
+            // the model is still being processed
+            this.models[methodId].delete();
+            delete this.models[methodId];
+            return true;
+        }
+        // the method is already finished
         const method = base.store("Methods")[methodId] as IMethodRecord;
         if (!method || method.deleted) {
             return true;
@@ -185,10 +192,7 @@ export default class MethodManager {
                 callback(base, rec.$id, this.deleteMethod.bind(this));
             });
         }
+
         return true;
     }
-
-    /////////////////////////////////////////////
-    // SPECIFIC FUNCTIONALITIES
-    /////////////////////////////////////////////
 }

@@ -43,14 +43,26 @@ export default class KMeansClustering extends ModelBasic {
     /** Trains the model. */
     async train(): Promise<KMeansClustering> {
         // set the method status
-        this.method.status = EMethodStatus.LOADING;
+        this.method.status = EMethodStatus.TRAINING;
         // get the feature matrix and train the model
         const matrix = this.featureSpace?.extractSparseMatrix(
             this.subset.hasElements
         ) as qm.la.SparseMatrix;
-        await this._trainModel(matrix as qm.la.SparseMatrix);
+        // get the columns with non-zero norms
+        const norms = matrix.colNorms();
+        const nonzeros = new qm.la.IntVector();
+        const zeros = new qm.la.IntVector();
+        for (let i = 0; i < norms.length; i++) {
+            norms[i] !== 0 ? nonzeros.push(i) : zeros.push(i);
+        }
+        const submatrix = matrix.getColSubmatrix(nonzeros);
+        await this._trainModel(submatrix as qm.la.SparseMatrix);
         // get the cluster statistics
-        this._clusterStatistics(matrix);
+        this._clusterStatistics(submatrix, nonzeros);
+        // assign the empty cluster
+        if (zeros.length !== 0) {
+            this._emptyCluster(zeros);
+        }
         // set the method results
         this.method.result = this.result;
         this.method.status = EMethodStatus.FINISHED;
@@ -91,10 +103,6 @@ export default class KMeansClustering extends ModelBasic {
                             },
                         },
                     },
-                    {
-                        type: "constant",
-                        const: 0.000001,
-                    },
                 ];
                 break;
             case "number":
@@ -127,7 +135,7 @@ export default class KMeansClustering extends ModelBasic {
      * Calculates the cluster statistics.
      * @param matrix - The document features.
      */
-    _clusterStatistics(matrix: qm.la.SparseMatrix) {
+    _clusterStatistics(matrix: qm.la.SparseMatrix, nonzeros: qm.la.IntVector) {
         // get the model parameters
         const params = this.getParams();
         // prepare clusters statistics placeholder
@@ -138,10 +146,9 @@ export default class KMeansClustering extends ModelBasic {
                 mean: -1,
                 std: -1,
             },
-            count: -1,
+            topFeatures: [] as { feature: string | number; weight: number }[],
             docIds: [] as number[],
             subsetId: -1,
-            topVals: [] as { value: string | number; weight: number }[],
         }));
         // get the subset elements
         const documents = this.subset.hasElements as qm.RecordSet;
@@ -152,7 +159,8 @@ export default class KMeansClustering extends ModelBasic {
         // iterate through all cluster ids
         for (let id = 0; id < idxv.length; id++) {
             const clusterId = idxv[id] as number;
-            const docId = (documents[id] as qm.Record).$id;
+            const tmpId = nonzeros[id] as number;
+            const docId = (documents[tmpId] as qm.Record).$id;
             clusters[clusterId].docIds.push(docId);
             // save the cluster document IDs
             if (!clusterIds[clusterId]) {
@@ -166,9 +174,7 @@ export default class KMeansClustering extends ModelBasic {
             const submatrix = matrix.getColSubmatrix(docIds);
             const centroid = this.model?.centroids?.getCol(parseInt(clusterId)) as qm.la.Vector;
 
-            // assign the number of documents in cluster
-            clusters[parseInt(clusterId)].count = submatrix.cols;
-
+            // get the cluster statistics
             let dists = new qm.la.Vector();
             if (params.method.clusteringType === "text") {
                 submatrix.normalizeCols();
@@ -197,19 +203,30 @@ export default class KMeansClustering extends ModelBasic {
 
             // get the top features of the centroid
             const sort = centroid.sortPerm(false);
-            const limit = sort.perm.length < 10 ? sort.perm.length : 10;
+            const limit = sort.perm.length < 100 ? sort.perm.length : 100;
             for (let i = 0; i < limit; i++) {
                 // get the maximum weight
                 const [weight, id] = [sort.vec[i], sort.perm[i]];
-                const value = this.featureSpace?.getFeature(id) as string;
-                if (value === "Constant" || weight === 0) {
+                const feature = this.featureSpace?.getFeature(id) as string;
+                if (weight === 0) {
                     // break when we get to the end of the feature list
                     break;
                 }
-                clusters[parseInt(clusterId)].topVals.push({ value, weight });
+                clusters[parseInt(clusterId)].topFeatures.push({ feature, weight });
             }
         }
         // assign the clusters
         this.result.clusters = clusters;
+    }
+
+    /**
+     * Assigns the empty cluster.
+     * @param zeros - The IDs that are in the empty cluster.
+     */
+    _emptyCluster(zeros: qm.la.IntVector) {
+        this.result.empty = {
+            docIds: zeros.toArray(),
+            subsetId: -1,
+        };
     }
 }

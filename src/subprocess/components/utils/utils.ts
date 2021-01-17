@@ -2,9 +2,9 @@ import qm from "qminer";
 import {
     EAggregateType,
     IBaseDatasetField,
+    IDocumentRecordSet,
     IHierarchyObject,
     IProcessing,
-    ISubsetRecord,
 } from "../../../interfaces";
 
 /**
@@ -13,12 +13,11 @@ import {
  * @param subsetId - The subset ID.
  * @param fields - The base fields metadata.
  */
-export function aggregates(
-    subset: ISubsetRecord,
+export function getAggregates(
+    documents: IDocumentRecordSet,
     fields: IBaseDatasetField[],
     params: IProcessing
 ) {
-    const elements = subset.hasElements;
     // calculates the aggregates
     const aggregates = fields
         .map((field) =>
@@ -26,12 +25,17 @@ export function aggregates(
                 ? {
                       field: field.name,
                       type: field.aggregate,
-                      statistics: _aggregatesByField(elements, field, params),
+                      statistics: _aggregatesByField(documents, field, params),
                   }
                 : null
         )
         .filter((v) => v);
     return aggregates;
+}
+
+/** Creates a copy of an object. */
+export function copy(obj: any) {
+    return JSON.parse(JSON.stringify(obj));
 }
 
 /**
@@ -49,7 +53,6 @@ function _aggregatesByField(elements: qm.RecordSet, field: IBaseDatasetField, pa
         // get the hierarchy statistics
         statistics = {
             type: "hierarchy",
-            field: `Multinomial[${fieldName}]`,
             values: [],
         };
         elements.each((rec) => {
@@ -62,20 +65,21 @@ function _aggregatesByField(elements: qm.RecordSet, field: IBaseDatasetField, pa
         statistics = elements.aggr({
             name: aggregate,
             field: fieldName,
-            type: aggregate,
+            type: EAggregateType.KEYWORDS,
             sample: elements.length,
             stopwords: params.stopwords,
         });
         if (statistics && statistics.keywords && !statistics.keywords.length) {
             statistics.keywords.push({ keyword: (elements[0] as qm.Record)[fieldName], weight: 1 });
         }
+        // normalize the statistics values
+        statistics.values = copy(statistics.keywords);
+        delete statistics.keywords;
     } else if (aggregate === EAggregateType.HISTOGRAM) {
         // get the histogram statistics
         statistics = {
-            type: "histogram",
+            type: aggregate,
             count: elements.length,
-            field: `Numberic[${fieldName}]`,
-            join: "",
             max: 0,
             mean: 0,
             median: 0,
@@ -86,9 +90,9 @@ function _aggregatesByField(elements: qm.RecordSet, field: IBaseDatasetField, pa
             // override with the actual values
             ...(elements.getVector(fieldName).sum() > 0 &&
                 elements.aggr({
-                    name: "histogram",
+                    name: aggregate,
                     field: fieldName,
-                    type: aggregate,
+                    type: EAggregateType.HISTOGRAM,
                 })),
         };
     } else if (aggregate === EAggregateType.COUNT) {
@@ -96,7 +100,7 @@ function _aggregatesByField(elements: qm.RecordSet, field: IBaseDatasetField, pa
         statistics = elements.aggr({
             name: aggregate,
             field: fieldName,
-            type: aggregate,
+            type: EAggregateType.COUNT,
         });
     } else if (aggregate === EAggregateType.TIMELINE) {
         // get the timeline statistics
@@ -106,6 +110,9 @@ function _aggregatesByField(elements: qm.RecordSet, field: IBaseDatasetField, pa
             type: EAggregateType.TIMELINE,
         });
     }
+    // delete non-useful fields
+    delete statistics.field;
+    delete statistics.join;
     // return the statistics
     return statistics;
 }

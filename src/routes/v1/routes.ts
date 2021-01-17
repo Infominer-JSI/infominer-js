@@ -192,19 +192,19 @@ const routeDefs = [
     // //////////////////////////////////////////////
     {
         method: "GET",
-        route: "/datasets/:datasetId/subsets/:subsetId/documents",
-        middleware: validators.subsets,
+        route: "/datasets/:datasetId/documents",
+        middleware: validators.datasets.concat(validators.documentsQuery),
         controller: controllers.getDocuments,
     },
     {
         method: "GET",
-        route: "/datasets/:datasetId/subsets/:subsetId/documents/:documentId",
+        route: "/datasets/:datasetId/documents/:documentId",
         middleware: validators.documents,
         controller: controllers.getDocument,
     },
     {
         method: "PUT",
-        route: "/datasets/:datasetId/subsets/:subsetId/documents/:documentId",
+        route: "/datasets/:datasetId/documents/:documentId",
         middleware: validators.documents,
         controller: controllers.updateDocument,
     },

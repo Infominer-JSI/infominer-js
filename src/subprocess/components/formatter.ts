@@ -1,20 +1,6 @@
-import { IDocumentRecord, IMethodRecord, ISubsetRecord } from "../../interfaces";
+import { EMethodType, IDocumentRecord, IMethodRecord, ISubsetRecord } from "../../interfaces";
 
 import qm from "qminer";
-
-/**
- * Returns the IDs of the available records.
- * @param recordSet - The record set containing the subsets or methods.
- */
-function availableRecords(recordSet: qm.RecordSet) {
-    if (!recordSet.empty && recordSet[0] && recordSet[0].deleted === undefined) {
-        // legacy support; records do not have deleted attribute
-        return recordSet.map((rec: qm.Record) => rec.$id) as number[];
-    }
-    // filter out documents that were deleted
-    recordSet.filterByField("deleted", false);
-    return !recordSet.empty ? (recordSet.map((rec: qm.Record) => rec.$id) as number[]) : null;
-}
 
 export default {
     /**
@@ -42,8 +28,7 @@ export default {
         method: rec.type,
         parameters: rec.parameters,
         status: rec.status,
-        // TODO: update the results based on the method
-        result: rec.result,
+        result: formatMethodResults(rec.type, rec.result),
         produced: rec.produced && !rec.produced.empty ? availableRecords(rec.produced) : null,
         appliedOn: rec.appliedOn?.$id,
         modified: rec.modified,
@@ -60,3 +45,62 @@ export default {
         values: rec.toJSON(false, false, false),
     }),
 };
+
+/**
+ * Returns the IDs of the available records.
+ * @param recordSet - The record set containing the subsets or methods.
+ */
+function availableRecords(recordSet: qm.RecordSet) {
+    if (!recordSet.empty && recordSet[0] && recordSet[0].deleted === undefined) {
+        // legacy support; records do not have deleted attribute
+        return recordSet.map((rec: qm.Record) => rec.$id) as number[];
+    }
+    // filter out documents that were deleted
+    recordSet.filterByField("deleted", false);
+    return !recordSet.empty ? (recordSet.map((rec: qm.Record) => rec.$id) as number[]) : null;
+}
+
+/**
+ * Formats the method results.
+ * @param type - The method type.
+ * @param result - The method results.
+ */
+function formatMethodResults(type: string, result: any) {
+    if (!result || !Object.keys(result).length) {
+        // handle empty results
+        return null;
+    }
+    switch (type) {
+        case EMethodType.AGGREGATE:
+            // handle aggregate results
+            return result;
+        case EMethodType.CLUSTERING_KMEANS:
+            // handle kmeans clustering results
+            return {
+                clusters: result.clusters.map((cluster: any) => ({
+                    distance: cluster.distance,
+                    topVals: cluster.topVals,
+                    subsetId: cluster.subsetId,
+                    count: cluster.count,
+                })),
+            };
+        case EMethodType.ACTIVE_LEARNING:
+            // handle active learning results
+            const { labelCount, positive, negative } = result;
+            return {
+                labelCount: labelCount,
+                positive: {
+                    avgSim: positive.avgSim,
+                    features: positive.features,
+                    subsetId: positive.subsetId,
+                },
+                negative: {
+                    avgSim: negative.avgSim,
+                    features: negative.features,
+                    subsetId: negative.subsetId,
+                },
+            };
+        default:
+            return result;
+    }
+}

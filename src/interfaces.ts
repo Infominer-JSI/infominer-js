@@ -89,6 +89,7 @@ export interface IParentMsg {
 export interface IChildMsg {
     requestId: number;
     error?: string;
+    statusCode?: number;
     results?: any;
 }
 
@@ -170,21 +171,21 @@ export interface ISubsetRecord extends qm.Record {
     metadata: null | { [key: string]: any };
     modified: boolean;
     deleted: boolean;
-    hasElements: qm.RecordSet;
+    hasElements: IDocumentRecordSet;
     resultedIn: IMethodRecord | null;
     usedBy: IMethodRecordSet | null;
 }
 
 export interface ISubsetRecordSet extends qm.RecordSet {
     each(callback: (rec: ISubsetRecord) => void): ISubsetRecordSet;
-    filter(callback: (rec: ISubsetRecord) => boolean): ISubsetRecordSet;
+    filter(callback: (rec: ISubsetRecord, id: number) => boolean): ISubsetRecordSet;
     map(callback: (rec: ISubsetRecord) => any): any[];
     [key: number]: ISubsetRecord;
 }
 
 export enum EMethodStatus {
     IN_QUEUE = "IN_QUEUE",
-    LOADING = "LOADING",
+    TRAINING = "TRAINING",
     FINISHED = "FINISHED",
 }
 
@@ -204,6 +205,13 @@ export interface IMethodRecordSet extends qm.RecordSet {
     filter(callback: (rec: IMethodRecord) => boolean): IMethodRecordSet;
     map(callback: (rec: IMethodRecord) => any): any[];
     [key: number]: IMethodRecord;
+}
+
+export interface IDocumentRecordSet extends qm.RecordSet {
+    each(callback: (rec: IDocumentRecord) => void): IDocumentRecordSet;
+    filter(callback: (rec: IDocumentRecord) => boolean): IDocumentRecordSet;
+    map(callback: (rec: IDocumentRecord) => any): any[];
+    [key: number]: IDocumentRecord;
 }
 
 //////////////////////////////////////////////////////
@@ -284,20 +292,25 @@ export interface IALearnModelParams extends IGenericModelParams {
     fields: string[];
     method: {
         query: string;
+        documents: {
+            labelled?: {
+                documentId: number;
+                label: number;
+            }[];
+            next?: {
+                documentId: number;
+                label: number | null;
+            };
+        };
     };
 }
 
 export interface IALearnUpdateParams extends IGenericModelParams {
+    step: EMethodStep;
     method: {
         documents: {
-            labelled: [
-                {
-                    document: IDocumentFormatter;
-                    label: number;
-                }
-            ];
             next: {
-                document: IDocumentFormatter;
+                documentId: number;
                 label: number;
             };
         };
@@ -320,6 +333,19 @@ export interface IHierarchyObject {
     name: string;
     size: number;
     children: IHierarchyObject[];
+}
+
+//////////////////////////////////////////////////////
+// Document interface
+//////////////////////////////////////////////////////
+
+export interface IDocumentQuery {
+    offset: number;
+    limit: number;
+    page?: number;
+    subsetId: number;
+    aggregates?: boolean;
+    processing: IProcessing;
 }
 
 //////////////////////////////////////////////////////

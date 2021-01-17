@@ -83,7 +83,7 @@ export default class SubsetManager {
             return recordSet;
         };
         if (!Number.isInteger(subsetId)) {
-            throw new BadRequest(`Invalid subset; subsetId=${subsetId}`);
+            throw new BadRequest(`Invalid subset id; subsetId=${subsetId}`);
         }
         // get the subset record
         const subset = base.store("Subsets")[subsetId] as ISubsetRecord;

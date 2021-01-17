@@ -13,6 +13,7 @@ import {
     IBaseProcessing,
     EMethodStatus,
     IMethodRecord,
+    IMethodUpdateParams,
 } from "../../interfaces";
 
 // static values
@@ -24,6 +25,7 @@ import path from "path";
 import parse from "csv-parse";
 // directory creation functions
 import { createDirectory, removeFile } from "../../utils/FileSystem";
+import { copy } from "./utils/utils";
 
 // import formatter
 import formatter from "./formatter";
@@ -31,11 +33,12 @@ import formatter from "./formatter";
 // import subset and model managers
 import SubsetManager from "./subsetManager";
 import MethodManager from "./methodManager";
+import DocumentManager from "./documentManager";
 
 // initialize subset and model managers
 const subsetManager = new SubsetManager(formatter);
 const methodManager = new MethodManager(formatter);
-
+const documentManager = new DocumentManager(formatter);
 export default class BaseDataset {
     private base: qm.Base | undefined;
     private dbpath: string;
@@ -88,7 +91,7 @@ export default class BaseDataset {
             const methodRecs = this.base.store("Methods").allRecords;
             methodRecs
                 .filter((rec) =>
-                    [EMethodStatus.IN_QUEUE, EMethodStatus.LOADING].includes(rec.status)
+                    [EMethodStatus.IN_QUEUE, EMethodStatus.TRAINING].includes(rec.status)
                 )
                 .each((rec) => {
                     rec.status = EMethodStatus.FINISHED;
@@ -228,6 +231,11 @@ export default class BaseDataset {
                 type: "dataset",
                 ...this.metadata,
                 nDocuments: this.base?.store("Dataset").length,
+                fields: this.fields.map((field) => ({
+                    name: field.name,
+                    type: field.type,
+                    group: field.group,
+                })),
             },
             ...subsetManager.getSubsets(this.base as qm.Base),
             ...methodManager.getMethods(this.base as qm.Base),
@@ -253,11 +261,9 @@ export default class BaseDataset {
             // handle each readable row
             parser.on("readable", () => {
                 let record;
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 while ((record = parser.read())) {
-                    // prepare and push record to dataset
-                    const rec = this._formatRecord(record, file.fields);
-                    this.base?.store("Dataset").push(rec);
+                    // create a new document
+                    this.createDocument(record, file.fields);
                 }
             });
             // handle parser errors
@@ -424,7 +430,7 @@ export default class BaseDataset {
      */
     async createMethod(method: IMethodCreateParams) {
         // update the method parameters with the base processing
-        const stopwords = this.processing.stopwords;
+        const stopwords = copy(this.processing.stopwords);
         if (method.parameters.processing?.stopwords?.words) {
             stopwords.words.push(...method.parameters.processing.stopwords.words);
         }
@@ -438,14 +444,29 @@ export default class BaseDataset {
         );
         // if the method is finished: create the subsets
         if (methods.status === EMethodStatus.FINISHED) {
-            switch (methods.type) {
-                case EMethodType.CLUSTERING_KMEANS:
-                    // create the cluster subsets
-                    await this._clusteringKMeansSubsets(methods);
-                    break;
-            }
+            await this._finalizeMethod(methods);
         }
         // return the created method
+        return this.getMethod(methods.$id);
+    }
+
+    /**
+     * Updates an existing method.
+     * @param methodId - The method ID.
+     * @param method - The method update parameters.
+     */
+    async updateMethod(methodId: number, method: IMethodUpdateParams) {
+        // create a new method
+        const { methods } = await methodManager.updateMethod(
+            this.base as qm.Base,
+            methodId,
+            method
+        );
+        // if the method is finished: create the subsets
+        if (methods.status === EMethodStatus.FINISHED) {
+            await this._finalizeMethod(methods);
+        }
+        // return the updated method
         return this.getMethod(methods.$id);
     }
 
@@ -462,29 +483,127 @@ export default class BaseDataset {
     }
 
     /**
+     * Finalize the method creation.
+     * @param method - The method record.
+     */
+    async _finalizeMethod(method: IMethodRecord) {
+        switch (method.type) {
+            case EMethodType.CLUSTERING_KMEANS:
+                // create the cluster subsets
+                await this._clusteringKMeansSubsets(method);
+                break;
+            case EMethodType.ACTIVE_LEARNING:
+                // create the active learning subsets
+                await this._activeLearningSubsets(method);
+                break;
+        }
+    }
+
+    /**
      * Creates a subset for each cluster.
      * @param method - The method record.
      */
     async _clusteringKMeansSubsets(method: IMethodRecord) {
         const result = method.result;
         for (const cluster of result?.clusters) {
-            // get the cluster documents
-            const documents = this.base
-                ?.store("Dataset")
-                .newRecordSet(new qm.la.IntVector(cluster.docIds));
-            // create the new subset
-            const { subsets } = await this.createSubset({
-                label: cluster.topVals
-                    .slice(0, 4)
-                    .map((obj: any) => obj.value)
-                    .join(", "),
-                resultedIn: method,
-                documents,
-            });
+            // assign the cluster subset
+            const label = cluster.topFeatures
+                .slice(0, 4)
+                .map((obj: any) => obj.feature)
+                .join(", ");
+            const subsets = await this._createMethodSubset(label, method, cluster.docIds);
             // assign the subset ID to the cluster
             cluster.subsetId = subsets.id;
         }
+        if (result?.empty) {
+            // assign the empty cluster subset
+            const subsets = await this._createMethodSubset(
+                "EMPTY CLUSTER",
+                method,
+                result.empty.docIds
+            );
+            result.empty.subsetId = subsets.id;
+        }
         // reassign the results
         method.result = result;
+    }
+
+    /**
+     * Creates a subset for each active learning subset.
+     * @param method - The method record.
+     */
+    async _activeLearningSubsets(method: IMethodRecord) {
+        /** Creates the subsets using the active learning metadata. */
+        const createSubset = async (metadata: any) => {
+            const label = metadata.features
+                .slice(0, 4)
+                .map((obj: any) => obj.feature)
+                .join(", ");
+            const subsets = await this._createMethodSubset(label, method, metadata.docIds);
+            return subsets.id;
+        };
+        // create the subsets
+        const result = method.result as any;
+        result.positive.subsetId = await createSubset(result.positive);
+        result.negative.subsetId = await createSubset(result.negative);
+        method.result = result;
+    }
+
+    /**
+     * Creates the subset associated to the model.
+     * @param label - The subset label.
+     * @param method - The method that created the subset.
+     * @param docIds - The array of document IDs.
+     */
+    async _createMethodSubset(label: string, method: IMethodRecord, docIds: number[]) {
+        // get the cluster documents
+        const documents = this.base?.store("Dataset").newRecordSet(new qm.la.IntVector(docIds));
+        // create the new subset
+        const { subsets } = await this.createSubset({
+            label: label,
+            resultedIn: method,
+            documents,
+        });
+        return subsets;
+    }
+
+    /////////////////////////////////////////////
+    // DOCUMENT HANDLERS
+    /////////////////////////////////////////////
+
+    /**
+     * Creates a new document.
+     * @param record - The record containing the document values.
+     * @param fields - The fields used to create the document.
+     */
+    createDocument(record: any, fields: IField[]) {
+        const documentId = documentManager.createDocument(this.base as qm.Base, record, fields);
+        return documentId;
+    }
+
+    /**
+     * Gets the specific document.
+     * @param documentId - The document ID.
+     */
+    getDocuments(query: any) {
+        // add dataset processing parameters
+        query.processing = this.processing;
+        return documentManager.getDocuments(this.base as qm.Base, query, this.fields);
+    }
+
+    /**
+     * Gets the specific document.
+     * @param documentId - The document ID.
+     */
+    getDocument(documentId: number) {
+        return documentManager.getDocument(this.base as qm.Base, documentId);
+    }
+
+    /**
+     * Gets the specific document.
+     * @param documentId - The document ID.
+     */
+    updateDocument(documentId: number, params: any) {
+        return documentManager.updateDocument(this.base as qm.Base, documentId, params);
     }
 }

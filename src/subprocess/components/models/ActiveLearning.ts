@@ -4,8 +4,6 @@ import {
     IALearnModelParams,
     IALearnUpdateParams,
     IDocumentFormatter,
-    IDocumentRecord,
-    IFormatter,
     ISubsetRecord,
 } from "../../../interfaces";
 
@@ -22,11 +20,11 @@ export default class ActiveLearning extends ModelBasic {
     private featureMatrix: qm.la.SparseMatrix | null;
     private model: qm.analytics.ActiveLearner | null;
     private elements: qm.RecordSet;
-    private formatter: IFormatter;
-    private modelInit: boolean;
+    private isModelInit: boolean;
     private labelCount: { positive: number; negative: number };
     private positiveDocs: number[];
     private negativeDocs: number[];
+    private docGenerator: Generator<IDocumentFormatter>;
 
     /**
      * Creates a new ActiveLearning instance.
@@ -34,14 +32,8 @@ export default class ActiveLearning extends ModelBasic {
      * @param subset - The subset.
      * @param params - The model parameters.
      */
-    constructor(
-        base: qm.Base,
-        subset: ISubsetRecord,
-        params: IALearnModelParams,
-        formatter: IFormatter
-    ) {
+    constructor(base: qm.Base, subset: ISubsetRecord, params: IALearnModelParams) {
         super(base, subset, params, EMethodType.ACTIVE_LEARNING);
-        this.formatter = formatter;
         this.featureSpace = null;
         this.featureMatrix = null;
         this.model = null;
@@ -49,13 +41,14 @@ export default class ActiveLearning extends ModelBasic {
         // get the document elements
         this.elements = this.subset.hasElements;
         // prepare labelling placeholders
-        this.modelInit = false;
+        this.isModelInit = false;
         this.labelCount = {
             positive: 0,
             negative: 0,
         };
         this.positiveDocs = [];
         this.negativeDocs = [];
+        this.docGenerator = this._initialDocuments();
     }
 
     /** Initializes the model. */
@@ -64,60 +57,89 @@ export default class ActiveLearning extends ModelBasic {
         await this._setFeatureSpace();
         // initialize the model
         this._initializeModel();
-
+        // get the first document to be labelled
+        this._assignNextDocument();
+        // set the method status
+        this.method.status = EMethodStatus.TRAINING;
         return this;
     }
 
     /**
      * Updates the active learning model.
-     * @param params - The update parameters.
+     * @param updateParams - The update parameters.
      */
-    async update(params: IALearnUpdateParams): Promise<IDocumentFormatter> {
+    async update(updateParams: IALearnUpdateParams): Promise<ActiveLearning> {
+        const params = this.getParams();
         // get the parameter information
         const {
-            next: { document, label },
-        } = params.method.documents;
+            next: { documentId, label },
+        } = updateParams.method.documents;
         // find the document within the elements
         for (let i = 0; i < this.elements.length; i++) {
             const element = this.elements[i] as qm.Record;
-            if (element.$id === document.id) {
+            if (element.$id === documentId) {
                 this.model?.setLabel(i, label);
                 // update the method parameters
-                const parameters = this.method.parameters;
-                parameters.labelled.push({ document, label });
-                this.method.parameters = parameters;
+                if (!params.method.documents.labelled) {
+                    params.method.documents.labelled = [];
+                }
+                // update the parameters
+                let isExistingDocument = false;
+                for (const labelled of params.method.documents.labelled) {
+                    // check if the document is one of the existing ones
+                    if (labelled.documentId === documentId) {
+                        // get the old label and assign new ones
+                        const oldLabel = labelled.label;
+                        labelled.label = label;
+                        if (label !== oldLabel) {
+                            // change the statistics only if the label is different
+                            this.labelCount.positive += label > 0 ? 1 : -1;
+                            this.labelCount.negative += label > 0 ? -1 : 1;
+                            if (label > 0) {
+                                // switch the document IDs; negative to positive
+                                this.positiveDocs.push(documentId);
+                                this.negativeDocs.splice(this.negativeDocs.indexOf(documentId), 1);
+                            } else {
+                                // switch the document IDs; positive to negative
+                                this.positiveDocs.splice(this.positiveDocs.indexOf(documentId), 1);
+                                this.negativeDocs.push(documentId);
+                            }
+                        }
+                        isExistingDocument = true;
+                        break;
+                    }
+                }
+                if (isExistingDocument) {
+                    break;
+                }
+                params.method.documents.labelled.push({ documentId, label });
                 // update the model parameters
                 if (label > 0) {
                     this.labelCount.positive++;
-                    this.positiveDocs.push(element.$id);
+                    this.positiveDocs.push(documentId);
                 } else if (label < 0) {
                     this.labelCount.negative++;
-                    this.negativeDocs.push(element.$id);
+                    this.negativeDocs.push(documentId);
                 }
                 break;
             }
         }
-        if (!this.modelInit) {
-            if (this.labelCount.positive > 2 && this.labelCount.negative > 2) {
-                this.model?.retrain();
-                this.modelInit = true;
-                // return the next uncertain document
-                return this._uncertainDocument();
-            }
-            // return the next initial document
-            return this._initialDocuments().next().value as IDocumentFormatter;
+        this.method.parameters = params;
+        // assign the next document
+        this._assignNextDocument();
+        if (this.isModelInit) {
+            // get the subset statistics
+            this.result = this.statistics();
+            // set the method results for visualization
+            this.method.result = this.result;
         }
-        // retrain the model
-        this.model?.retrain();
-        // return the next uncertain document
-        return this._uncertainDocument();
+        return this;
     }
 
     /** Trains the model. */
     train(): ActiveLearning {
-        // set the method status
-        this.method.status = EMethodStatus.LOADING;
-        // get the aggregates of the subset
+        // get the final results of the model
+        this.result = this.statistics();
         // set the method results
         this.method.result = this.result;
         this.method.status = EMethodStatus.FINISHED;
@@ -129,16 +151,18 @@ export default class ActiveLearning extends ModelBasic {
         return this.params as IALearnModelParams;
     }
 
-    /** Checks if the models was initialized or not. */
-    isModelInit() {
-        return this.isModelInit;
-    }
-
     /** Get the statistics. */
     statistics() {
+        // get the positive and negative subset statistics
+        const { positive, negative } = this._getSubsetStatistics();
+        // output the statistics
         return {
             labelCount: this.labelCount,
-            predicted: {},
+            positive,
+            negative,
+            get all() {
+                return this.positive.docIds.length + this.negative.docIds.length;
+            },
         };
     }
 
@@ -183,7 +207,7 @@ export default class ActiveLearning extends ModelBasic {
                 algorithm: "LIBSVM",
                 c: 2, // cost parameter
                 j: 2, // unbalance parameter
-                eps: 1e-3, // epsilon insensitive loss parameter
+                eps: 1e-4, // epsilon insensitive loss parameter
                 batchSize: 1000,
                 maxIterations: 10000,
                 maxTime: 60, // maximum runtime in seconds
@@ -213,31 +237,74 @@ export default class ActiveLearning extends ModelBasic {
         let nGenerated = 0;
         let docOffset = 0;
 
-        let documents: IDocumentFormatter[] = [];
+        let positiveExamples = 0;
+        let negativeExamples = 0;
+
+        // TODO: improve initial document retrieval
+        let documentIds: IDocumentFormatter[] = [];
         for (let i = 0; i < this.subset.hasElements.length; i++) {
             if (!ascendingOrder && this.labelCount.positive > 2) {
                 ascendingOrder = true;
                 nGenerated = 0;
-                docOffset = 0;
+                docOffset = negativeExamples;
+            } else if (ascendingOrder && this.labelCount.positive < 3) {
+                ascendingOrder = false;
+                nGenerated = 0;
+                docOffset = positiveExamples;
             }
             // get the index of the document we want to return
             const id = nGenerated % maxCount;
-            if (id) {
+            if (id === 0) {
                 const results = this._search(query, maxCount, docOffset, ascendingOrder);
-                documents = results.map((rec) => this.formatter.document(rec as IDocumentRecord));
+                documentIds = results.map((rec) => rec.$id);
                 // the next search batch will start from the end of the last batch
                 docOffset += results.length;
             }
             nGenerated++;
-            yield documents[id];
+            // track the number of positive and negative examples that were processed
+            !ascendingOrder ? positiveExamples++ : negativeExamples++;
+            yield documentIds[id];
         }
     }
 
     /** Get the next uncertain document. */
     _uncertainDocument() {
         const idx = this.model?.getQueryIdx(1)[0] as number;
-        const document = this.formatter.document(this.elements[idx] as IDocumentRecord);
-        return document;
+        const document = this.elements[idx] as qm.Record;
+        const documentId = document.$id;
+        return documentId;
+    }
+
+    /** Assigns the next document. */
+    _assignNextDocument() {
+        const params = this.getParams();
+        if (!params.method.documents) {
+            params.method.documents = {
+                labelled: [],
+            };
+        }
+        if (!this.isModelInit) {
+            if (this.labelCount.positive > 2 && this.labelCount.negative > 2) {
+                this.model?.retrain();
+                this.isModelInit = true;
+                // return the next uncertain document
+                const documentId = this._uncertainDocument() as number;
+                params.method.documents.next = { documentId, label: null };
+                this.method.parameters = params;
+                return this;
+            }
+            // return the next initial document
+            const documentId = this.docGenerator.next().value as number;
+            params.method.documents.next = { documentId, label: null };
+            this.method.parameters = params;
+            return this;
+        }
+        // retrain the model
+        this.model?.retrain();
+        // return the next uncertain document
+        const documentId = this._uncertainDocument() as number;
+        params.method.documents.next = { documentId, label: null };
+        this.method.parameters = params;
     }
 
     /**
@@ -272,5 +339,91 @@ export default class ActiveLearning extends ModelBasic {
         }
         // return the document set
         return this.base.store("Dataset").newRecordSet(idVec);
+    }
+
+    /** Gets the predicted subset statistics. */
+    _getSubsetStatistics() {
+        // get the model and predict the labels for the documents
+        const svc = this.model?.getSVC();
+        const predictions = svc?.predict(this.featureMatrix as qm.la.SparseMatrix) as qm.la.Vector;
+        // set the positive and negative prediction containers
+        const positiveDocIDs = new qm.la.IntVector();
+        const negativeDocIDs = new qm.la.IntVector();
+
+        // set the positive and negative prediction containers
+        const positivePosIDs = new qm.la.IntVector();
+        const negativePosIDs = new qm.la.IntVector();
+
+        // iterate through all of the predictions
+        for (let i = 0; i < predictions.length; i++) {
+            const docId = (this.elements[i] as qm.Record).$id;
+            if (this.positiveDocs.includes(docId) || predictions[i] > 0) {
+                positiveDocIDs.push(docId);
+                positivePosIDs.push(i);
+            } else if (this.negativeDocs.includes(docId) || predictions[i] < 0) {
+                negativeDocIDs.push(docId);
+                negativePosIDs.push(i);
+            }
+        }
+        // get the positive and negative documents
+        const positiveDocs = this.base.store("Dataset").newRecordSet(positiveDocIDs);
+        const negativeDocs = this.base.store("Dataset").newRecordSet(negativeDocIDs);
+
+        /**
+         * Calculates the average similarity.
+         * @param posIDs - The position IDs.
+         */
+        const averageSimilarity = (posIDs: qm.la.IntVector) => {
+            // get the number of documents and their feature matrix
+            const length = posIDs.length;
+            const submatrix = this.featureMatrix?.getColSubmatrix(posIDs);
+            const onesVec = new qm.la.Vector(new Array(length).fill(1));
+            // get the centroid
+            const centroid = submatrix?.multiply(onesVec).multiply(1 / length) as qm.la.Vector;
+            // get the average similarity of the documents
+            const avgSim = (1 / length) * (submatrix?.multiplyT(centroid) as qm.la.Vector).sum();
+            return avgSim;
+        };
+
+        /**
+         * Gets the features and their weights.
+         * @param type - The string specifying the type of features.
+         * @param maxCount - The maximum number of features.
+         */
+        const getFeatures = (type = "positive", maxCount = 100) => {
+            // assign the features placeholder
+            const features: { feature: string; weight: number }[] = [];
+            // get the model weights and sort them accordingly
+            const weights = svc?.weights as qm.la.Vector;
+            const order = type === "positive" ? false : true;
+            const sort = weights.sortPerm(order);
+            const limit = sort.perm.length / 2 < maxCount ? sort.perm.length / 2 : maxCount;
+            // iterate through the features and store them
+            for (let i = 0; i < limit; i++) {
+                const [weight, id] = [sort.vec[i], sort.perm[i]];
+                const feature = this.featureSpace?.getFeature(id) as string;
+                if ((!order && weight < 0) || (order && weight > 0)) {
+                    break;
+                }
+                // add the feature and weight
+                features.push({ feature, weight });
+            }
+            return features;
+        };
+        // return the statistics
+        return {
+            positive: {
+                docIds: positiveDocs.map((rec) => rec.$id),
+                avgSim: averageSimilarity(positivePosIDs),
+                features: getFeatures("positive"),
+                subsetId: -1,
+            },
+            negative: {
+                docIds: negativeDocs.map((rec) => rec.$id),
+                avgSim: averageSimilarity(negativePosIDs),
+                features: getFeatures("negative"),
+                subsetId: -1,
+            },
+        };
     }
 }
