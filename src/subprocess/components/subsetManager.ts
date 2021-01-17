@@ -35,7 +35,7 @@ export default class SubsetManager {
         // get the subset attributes
         const { label, description, resultedIn, documents } = subset;
         // create a new subset record
-        const subsetId = base.store("Subsets").push({ label, description });
+        const subsetId = base.store("Subsets").push({ label, ...(description && { description }) });
         if (resultedIn && !resultedIn.deleted) {
             // join the method with the subset
             base.store("Subsets")[subsetId]?.$addJoin("resultedIn", resultedIn);
@@ -83,12 +83,12 @@ export default class SubsetManager {
             return recordSet;
         };
         if (!Number.isInteger(subsetId)) {
-            throw new BadRequest(`Invalid subset | id=${subsetId}`);
+            throw new BadRequest(`Invalid subset id; subsetId=${subsetId}`);
         }
         // get the subset record
         const subset = base.store("Subsets")[subsetId] as ISubsetRecord;
         if (!subset || subset.deleted) {
-            throw new BadRequest(`Subset does not exist | id=${subsetId}`);
+            throw new BadRequest(`Subset does not exist; subsetId=${subsetId}`);
         }
         // prepare the response
         const response = {
@@ -116,11 +116,11 @@ export default class SubsetManager {
      */
     updateSubset(base: qm.Base, subsetId: number, subset: ISubsetUpdateParams) {
         if (!Number.isInteger(subsetId)) {
-            throw new BadRequest(`Invalid subset | id=${subsetId}`);
+            throw new BadRequest(`Invalid subset; subsetId=${subsetId}`);
         }
         const record = base.store("Subsets")[subsetId] as ISubsetRecord;
         if (!record || record.deleted) {
-            throw new BadRequest(`Subset does not exist | id=${subsetId}`);
+            throw new BadRequest(`Subset does not exist; subsetId=${subsetId}`);
         }
         for (const [key, value] of Object.entries(subset)) {
             switch (key) {
@@ -146,7 +146,7 @@ export default class SubsetManager {
      */
     deleteSubset(base: qm.Base, subsetId: number, callback: any) {
         if (!Number.isInteger(subsetId)) {
-            throw new BadRequest(`Invalid subset | id=${subsetId}`);
+            throw new BadRequest(`Invalid subset; subsetId=${subsetId}`);
         }
         const subset = base.store("Subsets")[subsetId] as ISubsetRecord;
         if (!subset || subset.deleted) {

@@ -96,8 +96,25 @@ function messageHandler(message: IParentMsg) {
         case EParentCmd.GET_METHOD:
             getMethod(message);
             break;
+        case EParentCmd.CREATE_METHOD:
+            createMethod(message);
+            break;
+        case EParentCmd.UPDATE_METHOD:
+            updateMethod(message);
+            break;
         case EParentCmd.DELETE_METHOD:
             deleteMethod(message);
+            break;
+
+        /////////////////////////////
+        // DOCUMENT COMMANDS
+        /////////////////////////////
+
+        case EParentCmd.GET_DOCUMENTS:
+            getDocuments(message);
+            break;
+        case EParentCmd.GET_DOCUMENT:
+            getDocument(message);
             break;
 
         /////////////////////////////
@@ -125,7 +142,7 @@ async function _functionWrapper(message: IParentMsg, callback: TMessageProcess) 
         return processSend({ requestId, results });
     } catch (error) {
         // send the error message back to the parent
-        return processSend({ requestId, error: error.message });
+        return processSend({ requestId, error: error.message, statusCode: error.statusCode });
     }
 }
 
@@ -171,26 +188,26 @@ async function createDataset(message: IParentMsg) {
         const { file, dataset: data } = body?.content;
         baseDataset = new BaseDataset({ fields: file.fields, ...data });
         await baseDataset.populateBase(file);
-        const { dataset, subsets, methods } = baseDataset.getDataset();
-        return { dataset, subsets, methods };
+        const results = baseDataset.getDataset();
+        return results;
     });
 }
 
 // opens the dataset
 async function openDataset(message: IParentMsg) {
     await _functionWrapper(message, async (body) => {
-        const { file, dataset } = body?.content;
-        baseDataset = new BaseDataset({ fields: file.fields, ...dataset });
-        // return the dataset ID
-        return { dataset: baseDataset.metadata };
+        const { file, dataset: data } = body?.content;
+        baseDataset = new BaseDataset({ fields: file.fields, ...data });
+        const results = baseDataset.getDataset();
+        return results;
     });
 }
 
-// updates the dataset
+// gets the dataset
 async function getDataset(message: IParentMsg) {
     await _functionWrapper(message, async () => {
-        const { dataset, subsets, methods } = (baseDataset as BaseDataset).getDataset();
-        return { dataset, subsets, methods };
+        const results = (baseDataset as BaseDataset).getDataset();
+        return results;
     });
 }
 
@@ -210,8 +227,8 @@ async function updateDataset(message: IParentMsg) {
 // gets the subsets
 async function getSubsets(message: IParentMsg) {
     await _functionWrapper(message, async () => {
-        const { subsets } = (baseDataset as BaseDataset).getSubsets();
-        return { subsets };
+        const results = (baseDataset as BaseDataset).getSubsets();
+        return results;
     });
 }
 
@@ -219,8 +236,8 @@ async function getSubsets(message: IParentMsg) {
 async function getSubset(message: IParentMsg) {
     await _functionWrapper(message, async (body) => {
         const { subsetId } = body?.content;
-        const { subsets, methods } = (baseDataset as BaseDataset).getSubset(subsetId);
-        return { subsets, methods };
+        const results = (baseDataset as BaseDataset).getSubset(subsetId);
+        return results;
     });
 }
 
@@ -228,8 +245,8 @@ async function getSubset(message: IParentMsg) {
 async function updateSubset(message: IParentMsg) {
     await _functionWrapper(message, async (body) => {
         const { subsetId, subset } = body?.content;
-        const { subsets } = (baseDataset as BaseDataset).updateSubset(subsetId, subset);
-        return { subsets };
+        const results = (baseDataset as BaseDataset).updateSubset(subsetId, subset);
+        return results;
     });
 }
 
@@ -249,8 +266,26 @@ async function deleteSubset(message: IParentMsg) {
 // gets all methods
 async function getMethods(message: IParentMsg) {
     await _functionWrapper(message, async () => {
-        const { methods } = (baseDataset as BaseDataset).getMethods();
-        return { methods };
+        const results = (baseDataset as BaseDataset).getMethods();
+        return results;
+    });
+}
+
+// creates a new method
+async function createMethod(message: IParentMsg) {
+    await _functionWrapper(message, async (body) => {
+        const { method } = body?.content;
+        const results = await (baseDataset as BaseDataset).createMethod(method);
+        return results;
+    });
+}
+
+// updates an existing method
+async function updateMethod(message: IParentMsg) {
+    await _functionWrapper(message, async (body) => {
+        const { methodId, method } = body?.content;
+        const results = await (baseDataset as BaseDataset).updateMethod(methodId, method);
+        return results;
     });
 }
 
@@ -258,8 +293,8 @@ async function getMethods(message: IParentMsg) {
 async function getMethod(message: IParentMsg) {
     await _functionWrapper(message, async (body) => {
         const { methodId } = body?.content;
-        const { methods, subsets } = (baseDataset as BaseDataset).getMethod(methodId);
-        return { methods, subsets };
+        const results = (baseDataset as BaseDataset).getMethod(methodId);
+        return results;
     });
 }
 
@@ -269,5 +304,27 @@ async function deleteMethod(message: IParentMsg) {
         const { methodId } = body?.content;
         const isDeleted = (baseDataset as BaseDataset).deleteMethod(methodId);
         return { methods: { id: methodId, isDeleted } };
+    });
+}
+
+//////////////////////////////////////////////////////
+// Documents request handling
+//////////////////////////////////////////////////////
+
+// gets all documents
+async function getDocuments(message: IParentMsg) {
+    await _functionWrapper(message, async (body) => {
+        const { query } = body?.content;
+        const results = (baseDataset as BaseDataset).getDocuments(query);
+        return results;
+    });
+}
+
+// gets a specific document
+async function getDocument(message: IParentMsg) {
+    await _functionWrapper(message, async (body) => {
+        const { documentId } = body?.content;
+        const results = (baseDataset as BaseDataset).getDocument(documentId);
+        return results;
     });
 }

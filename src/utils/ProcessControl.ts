@@ -18,6 +18,20 @@ import {
 
 // import modules
 import { fork } from "child_process";
+import { BadRequest, ServerError, UserNotAuthorized } from "./ErrorDefs";
+
+function setError(statusCode?: number, message?: string) {
+    switch (statusCode) {
+        case 400:
+            return new BadRequest(message as string);
+        case 401:
+            return new UserNotAuthorized(message as string);
+        case 500:
+            return new ServerError(message as string);
+        default:
+            return message ? new Error(message) : undefined;
+    }
+}
 
 // child process control instance
 export default class ProcessControl {
@@ -60,14 +74,15 @@ export default class ProcessControl {
 
         child.on("message", (message: IChildMsg) => {
             // get the message request ID and callback
-            const requestId = message.requestId;
+            const { requestId, results, error: eMessage, statusCode } = message;
             const callbackH = this._callbackH.get(requestId);
             if (callbackH) {
                 // get the callback function
                 const callback = callbackH.callback;
-                const error = message.error ? new Error(message.error) : undefined;
+                // get the error object (if any)
+                const error = setError(statusCode, eMessage);
                 // envoke the callback
-                callback(error, message.results);
+                callback(error, results);
                 // delete the callback hash
                 this._callbackH.delete(requestId);
             }

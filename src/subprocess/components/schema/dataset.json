@@ -28,6 +28,7 @@
             { "name": "type", "type": "string", "shortstring": true },
             { "name": "parameters", "type": "json" },
             { "name": "result", "type": "json", "null": true },
+            { "name": "status", "type": "string", "default": "IN_QUEUE" },
             { "name": "modified", "type": "bool", "default": false },
             { "name": "deleted", "type": "bool", "default": false }
         ],

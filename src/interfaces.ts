@@ -89,6 +89,7 @@ export interface IParentMsg {
 export interface IChildMsg {
     requestId: number;
     error?: string;
+    statusCode?: number;
     results?: any;
 }
 
@@ -107,6 +108,13 @@ export enum EBaseMode {
     OPEN = "open",
 }
 
+export interface IBaseProcessing {
+    stopwords: {
+        language: string;
+        words: string[];
+    };
+}
+
 export interface IBaseDatasetParams {
     mode: EBaseMode;
     dbpath: string;
@@ -117,7 +125,7 @@ export interface IBaseDatasetParams {
         description: string | null;
         created: string;
     };
-    preprocessing?: {
+    processing: {
         stopwords?: {
             language?: string;
             words?: string[];
@@ -133,9 +141,11 @@ export interface IFileMetadata {
 
 export interface IBaseDatasetField extends qm.IField {
     aggregate?: string;
+    group: string;
 }
 
 export enum EAggregateType {
+    COUNT = "count",
     HIERARCHY = "hierarchy",
     HISTOGRAM = "histogram",
     KEYWORDS = "keywords",
@@ -161,22 +171,29 @@ export interface ISubsetRecord extends qm.Record {
     metadata: null | { [key: string]: any };
     modified: boolean;
     deleted: boolean;
-    hasElements: qm.RecordSet;
+    hasElements: IDocumentRecordSet;
     resultedIn: IMethodRecord | null;
     usedBy: IMethodRecordSet | null;
 }
 
 export interface ISubsetRecordSet extends qm.RecordSet {
     each(callback: (rec: ISubsetRecord) => void): ISubsetRecordSet;
-    filter(callback: (rec: ISubsetRecord) => boolean): ISubsetRecordSet;
+    filter(callback: (rec: ISubsetRecord, id: number) => boolean): ISubsetRecordSet;
     map(callback: (rec: ISubsetRecord) => any): any[];
     [key: number]: ISubsetRecord;
+}
+
+export enum EMethodStatus {
+    IN_QUEUE = "IN_QUEUE",
+    TRAINING = "TRAINING",
+    FINISHED = "FINISHED",
 }
 
 export interface IMethodRecord extends qm.Record {
     type: string;
     parameters: { [key: string]: any };
     result: null | { [key: string]: any };
+    status: EMethodStatus;
     modified: boolean;
     deleted: boolean;
     produced: ISubsetRecordSet | null;
@@ -190,13 +207,20 @@ export interface IMethodRecordSet extends qm.RecordSet {
     [key: number]: IMethodRecord;
 }
 
+export interface IDocumentRecordSet extends qm.RecordSet {
+    each(callback: (rec: IDocumentRecord) => void): IDocumentRecordSet;
+    filter(callback: (rec: IDocumentRecord) => boolean): IDocumentRecordSet;
+    map(callback: (rec: IDocumentRecord) => any): any[];
+    [key: number]: IDocumentRecord;
+}
+
 //////////////////////////////////////////////////////
 // Subset interface
 //////////////////////////////////////////////////////
 
 export interface ISubsetCreateParams {
     label: string;
-    description: string;
+    description?: string;
     resultedIn?: qm.Record;
     documents?: qm.RecordSet;
 }
@@ -210,10 +234,118 @@ export interface ISubsetUpdateParams {
 // Method interface
 //////////////////////////////////////////////////////
 
+export enum EMethodType {
+    AGGREGATE = "aggregate.subset",
+    CLUSTERING_KMEANS = "clustering.kmeans",
+    ACTIVE_LEARNING = "classifier.active_learning",
+}
+
+export enum EMethodStep {
+    TRAIN = "train",
+    UPDATE = "update",
+}
+
+export interface IProcessing {
+    stopwords?: {
+        language?: string;
+        words?: string[];
+    };
+    [key: string]: any;
+}
+
+export interface IMethodCreateParams {
+    type: EMethodType;
+    parameters: {
+        subsetId: number;
+        fields?: string[];
+        processing: IProcessing;
+        method?: {
+            [key: string]: any;
+        };
+    };
+}
+
+export interface IGenericModelParams {
+    subsetId: number;
+    fields?: string[];
+    processing: IProcessing;
+    method?: {
+        [key: string]: any;
+    };
+    [key: string]: any;
+}
+
+export interface IAggregatesModelParams extends IGenericModelParams {
+    subsetId: number;
+    processing: IProcessing;
+}
+
+export interface IKMeansModelParams extends IGenericModelParams {
+    fields: string[];
+    method: {
+        clusteringType: string;
+        k: number;
+    };
+}
+
+export interface IALearnModelParams extends IGenericModelParams {
+    fields: string[];
+    method: {
+        query: string;
+        documents: {
+            labelled?: {
+                documentId: number;
+                label: number;
+            }[];
+            next?: {
+                documentId: number;
+                label: number | null;
+            };
+        };
+    };
+}
+
+export interface IALearnUpdateParams extends IGenericModelParams {
+    step: EMethodStep;
+    method: {
+        documents: {
+            next: {
+                documentId: number;
+                label: number;
+            };
+        };
+    };
+}
+
+export interface IMethodUpdateParams {
+    step: EMethodStep;
+    parameters?: {
+        fields?: string[];
+        processing?: IProcessing;
+        method?: {
+            [key: string]: any;
+        };
+        [key: string]: any;
+    };
+}
+
 export interface IHierarchyObject {
     name: string;
     size: number;
     children: IHierarchyObject[];
+}
+
+//////////////////////////////////////////////////////
+// Document interface
+//////////////////////////////////////////////////////
+
+export interface IDocumentQuery {
+    offset: number;
+    limit: number;
+    page?: number;
+    subsetId: number;
+    aggregates?: boolean;
+    processing: IProcessing;
 }
 
 //////////////////////////////////////////////////////
@@ -236,6 +368,7 @@ export interface IMethodFormatter {
     id: number;
     type: string;
     method: string;
+    status: EMethodStatus;
     parameters: any;
     result: any;
     produced: number[] | null;

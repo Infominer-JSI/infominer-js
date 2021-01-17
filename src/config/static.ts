@@ -5,14 +5,16 @@ export const DEFAULT_DELIMITER = "\\wnn";
 export const MAX_ROW_PROCESSED = 100;
 
 // export default regex values
-export const REGEX_CATEGORY = new RegExp(/\S*[\\\/][\w-]+|[\w-]+/gi);
+export const REGEX_CATEGORY = new RegExp(/\S*[\\\/][\w-]+/gi);
+export const REGEX_CLASS = new RegExp(/^[\w-_]+$/gi);
 export const REGEX_NUMBER = new RegExp(/[^0-9,\.\-\+]+/gi);
 
 // export file type mappings
 const FIELD_TYPE_MAPPING = [
-    { id: 4, type: "float", label: "number" },
-    { id: 3, type: "datetime", label: "datetime" },
-    { id: 2, type: "string_v", label: "category" },
+    { id: 5, type: "float", label: "number" },
+    { id: 4, type: "datetime", label: "datetime" },
+    { id: 3, type: "string_v", label: "category" },
+    { id: 2, type: "string", label: "class" },
     { id: 1, type: "string", label: "text" },
 ];
 

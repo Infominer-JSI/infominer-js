@@ -7,7 +7,7 @@ import { BadRequest } from "../../utils/ErrorDefs";
 
 // import middleware
 import uploadFile from "../../middleware/fileUpload";
-import * as converters from "../../middleware/converters";
+import * as validators from "../../middleware/validators";
 
 // import controllers
 import * as controllers from "../../controllers/v1/controllers";
@@ -23,10 +23,11 @@ const router = express.Router();
 const validateRequest = (req: Request, _res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+        console.log(errors.array());
         // create the error message
         const message = errors
             .array()
-            .map((val) => `${val.msg}: ${val.param}`)
+            .map((error) => `${error.msg}; ${error.param}=${error.value}`)
             .join(", ");
         // send the bad request error
         return next(new BadRequest(message));
@@ -87,31 +88,31 @@ const routeDefs = [
     {
         method: "POST",
         route: "/datasets/:datasetId",
-        middleware: converters.datasets,
+        middleware: validators.datasets,
         controller: controllers.createDataset,
     },
     {
         method: "GET",
         route: "/datasets/:datasetId/status",
-        middleware: converters.datasets,
+        middleware: validators.datasets,
         controller: controllers.checkDatasetStatus,
     },
     {
         method: "GET",
         route: "/datasets/:datasetId",
-        middleware: converters.datasets,
+        middleware: validators.datasets,
         controller: controllers.getDataset,
     },
     {
         method: "PUT",
         route: "/datasets/:datasetId",
-        middleware: converters.datasets,
+        middleware: validators.datasets,
         controller: controllers.updateDataset,
     },
     {
         method: "DELETE",
         route: "/datasets/:datasetId",
-        middleware: converters.datasets,
+        middleware: validators.datasets,
         controller: controllers.deleteDataset,
     },
     // //////////////////////////////////////////////
@@ -120,37 +121,37 @@ const routeDefs = [
     {
         method: "GET",
         route: "/datasets/:datasetId/methods",
-        middleware: converters.datasets,
+        middleware: validators.datasets,
         controller: controllers.getMethods,
     },
     {
         method: "POST",
         route: "/datasets/:datasetId/methods",
-        middleware: converters.datasets,
+        middleware: validators.datasets,
         controller: controllers.createMethod,
     },
     {
         method: "GET",
         route: "/datasets/:datasetId/methods/:methodId/status",
-        middleware: converters.methods,
+        middleware: validators.methods,
         controller: controllers.checkMethodStatus,
     },
     {
         method: "GET",
         route: "/datasets/:datasetId/methods/:methodId",
-        middleware: converters.methods,
+        middleware: validators.methods,
         controller: controllers.getMethod,
     },
     {
         method: "PUT",
         route: "/datasets/:datasetId/methods/:methodId",
-        middleware: converters.methods,
+        middleware: validators.methods,
         controller: controllers.updateMethod,
     },
     {
         method: "DELETE",
         route: "/datasets/:datasetId/methods/:methodId",
-        middleware: converters.methods,
+        middleware: validators.methods,
         controller: controllers.deleteMethod,
     },
     // //////////////////////////////////////////////
@@ -159,31 +160,31 @@ const routeDefs = [
     {
         method: "GET",
         route: "/datasets/:datasetId/subsets",
-        middleware: converters.datasets,
+        middleware: validators.datasets,
         controller: controllers.getSubsets,
     },
     {
         method: "POST",
         route: "/datasets/:datasetId/subsets",
-        middleware: converters.datasets,
+        middleware: validators.datasets,
         controller: controllers.createSubset,
     },
     {
         method: "GET",
         route: "/datasets/:datasetId/subsets/:subsetId",
-        middleware: converters.subsets,
+        middleware: validators.subsets,
         controller: controllers.getSubset,
     },
     {
         method: "PUT",
         route: "/datasets/:datasetId/subsets/:subsetId",
-        middleware: converters.subsets,
+        middleware: validators.subsets,
         controller: controllers.updateSubset,
     },
     {
         method: "DELETE",
         route: "/datasets/:datasetId/subsets/:subsetId",
-        middleware: converters.subsets,
+        middleware: validators.subsets,
         controller: controllers.deleteSubset,
     },
     // //////////////////////////////////////////////
@@ -191,20 +192,20 @@ const routeDefs = [
     // //////////////////////////////////////////////
     {
         method: "GET",
-        route: "/datasets/:datasetId/subsets/:subsetId/documents",
-        middleware: converters.subsets,
+        route: "/datasets/:datasetId/documents",
+        middleware: validators.datasets.concat(validators.documentsQuery),
         controller: controllers.getDocuments,
     },
     {
         method: "GET",
-        route: "/datasets/:datasetId/subsets/:subsetId/documents/:documentId",
-        middleware: converters.documents,
+        route: "/datasets/:datasetId/documents/:documentId",
+        middleware: validators.documents,
         controller: controllers.getDocument,
     },
     {
         method: "PUT",
-        route: "/datasets/:datasetId/subsets/:subsetId/documents/:documentId",
-        middleware: converters.documents,
+        route: "/datasets/:datasetId/documents/:documentId",
+        middleware: validators.documents,
         controller: controllers.updateDocument,
     },
 ];

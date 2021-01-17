@@ -10,7 +10,7 @@ import { EParentCmd } from "../../interfaces";
 
 // import utils
 import { generalRequestWrapper } from "../../utils/processHandlers";
-import { parseParams, parseCredentials, parseBody } from "../../utils/requestParsers";
+import { parseParams, parseCredentials, parseBody, parseQuery } from "../../utils/requestParsers";
 
 // //////////////////////////////////////////////
 // Export controllers
@@ -22,11 +22,17 @@ export const getDocuments = (req: Request, res: Response, next: NextFunction) =>
         // TODO: finalize the command
         // parse the request
         const { owner } = parseCredentials(req);
-        const { datasetId, subsetId } = parseParams(req);
+        const { datasetId } = parseParams(req);
+        const { offset, limit, subsetId, aggregates } = parseQuery(req);
         // assign the command
         const cmd = EParentCmd.GET_DOCUMENTS;
         // return the values
-        return { id: datasetId, owner, cmd, content: { subsetId } };
+        return {
+            id: datasetId,
+            owner,
+            cmd,
+            content: { query: { offset, limit, subsetId, aggregates } },
+        };
     });
 };
 
@@ -35,11 +41,11 @@ export const getDocument = (req: Request, res: Response, next: NextFunction) => 
     return generalRequestWrapper(req, res, next, () => {
         // parse the request
         const { owner } = parseCredentials(req);
-        const { datasetId, subsetId, documentId } = parseParams(req);
+        const { datasetId, documentId } = parseParams(req);
         // assign the command
         const cmd = EParentCmd.GET_DOCUMENT;
         // return the values
-        return { id: datasetId, owner, cmd, content: { subsetId, documentId } };
+        return { id: datasetId, owner, cmd, content: { documentId } };
     });
 };
 
@@ -49,11 +55,11 @@ export const updateDocument = (req: Request, res: Response, next: NextFunction) 
         // TODO: finalize the command
         // parse the request
         const { owner } = parseCredentials(req);
-        const { datasetId, subsetId, documentId } = parseParams(req);
+        const { datasetId, documentId } = parseParams(req);
         const { document } = parseBody(req);
         // assign the command
         const cmd = EParentCmd.UPDATE_DOCUMENT;
         // return the values
-        return { id: datasetId, owner, cmd, content: { subsetId, documentId, document } };
+        return { id: datasetId, owner, cmd, content: { documentId, document } };
     });
 };
