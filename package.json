@@ -4,7 +4,6 @@
     "description": "The infominer backend",
     "main": "./dist/server.js",
     "scripts": {
-        "clean": "rm -rf ./data && rm -rf ./tmp && cd ./load && node downgrade && node upgrade",
         "start": "ts-node ./src/server.ts --DEV_MODE",
         "start:watch": "tsnd --respawn ./src/server.ts --DEV_MODE",
         "build": "tsc --project .",
@@ -12,6 +11,7 @@
         "deploy": "npm run build && node ./dist/server.js",
         "test": "echo \"Error: no test specified\" && exit 0",
         "lint": "eslint './src/**/*.{js,ts}' --quiet --fix",
+        "clean": "rm -rf ./data && rm -rf ./tmp && cd ./load && node downgrade && node upgrade",
         "dockerize": "docker build -t infominer/backend ."
     },
     "repository": {
