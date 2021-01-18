@@ -11,7 +11,7 @@ The (semi-)automatic data exploration and topic ontology creation tool.
 -   Docker version 10 or higher, docker-compose v1.23 or higher (required only for setting postgres with docker)
 -   Postgres version 10 or greater (required only if one will not spin up a postgres docker container)
 
-## TL;DR
+## TL;DR Setup
 
 1. Install the nodejs dependencies and create the **.env** file in the [./env](/env) folder (see [Installation](#installation)).
    For the **.env**, just copy what it says in the [README](./env/README.md).
