@@ -1,0 +1,10 @@
+apps:
+    - script: "server.js"
+      name: "infominer-backend"
+      cwd: "./dist/"
+      args: "--DEV_MODE"
+      instances: "1"
+      exec_mode: "fork"
+      autorestart: true
+      max_restart: 20
+      watch: false
