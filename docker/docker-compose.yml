@@ -3,6 +3,7 @@ version: "3.1"
 services:
   infominer_db:
     image: postgres:13
+    container_name: infominer-db
     restart: always
     environment:
       - POSTGRES_USER=postgres
@@ -11,7 +12,7 @@ services:
     ports:
       - "4110:5432"
     volumes:
-      - infominer_db-data:/var/lib/postgresql/data
+      - infominer-db:/var/lib/postgresql/data
     networks:
       infominer: {}
 
@@ -19,4 +20,4 @@ networks:
   infominer: {}
 
 volumes:
-  infominer_db-data:
+  infominer-db:
