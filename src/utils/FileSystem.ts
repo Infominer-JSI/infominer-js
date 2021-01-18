@@ -9,7 +9,7 @@ import fs from "fs";
 import path from "path";
 
 // import configuration
-import { DATAPATH } from "../config/static";
+import { DATA_PATH } from "../config/static";
 
 // removes the file
 export function removeFile(fileName: string) {
@@ -122,8 +122,6 @@ export function createDirectory(dirPath: string) {
 // Specialized functions
 // //////////////////////////////////////////////
 
-// initialize the data folder
-createFolder(DATAPATH);
 // creates a database directory path
 export function createDatabaseDirectoryPath(owner: string) {
     // create a random folder name
@@ -132,5 +130,5 @@ export function createDatabaseDirectoryPath(owner: string) {
         Math.random().toString(36).substring(2, 15) +
         Date.now();
     // return the database directory path
-    return path.join(DATAPATH, owner.toString(), dbFolder);
+    return path.join(DATA_PATH, owner.toString(), dbFolder);
 }

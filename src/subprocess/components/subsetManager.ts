@@ -1,4 +1,6 @@
 import {
+    IBaseDatasetField,
+    IDocumentRecord,
     IFormatter,
     IMethodFormatter,
     IMethodRecord,
@@ -9,6 +11,10 @@ import {
 } from "../../interfaces";
 
 import qm from "qminer";
+import fs from "fs";
+import { resolve } from "path";
+
+import { TMP_DOWNLOAD_PATH } from "../../config/static";
 import { BadRequest } from "../../utils/ErrorDefs";
 
 export default class SubsetManager {
@@ -166,5 +172,75 @@ export default class SubsetManager {
             }
         }
         return true;
+    }
+
+    /**
+     * Prepares a file containing the subset documents; used to download.
+     * @param base - The qminer base.
+     * @param subsetId - The subset ID.
+     * @param fields - The document fields.
+     */
+    downloadSubset(base: qm.Base, subsetId: number, fields: IBaseDatasetField[]) {
+        /**
+         * Formats the document field value.
+         * @param record - The document record.
+         * @param field - The database field.
+         */
+        function formatDocumentField(record: IDocumentRecord, field: IBaseDatasetField) {
+            if (!record[field.name]) {
+                return "";
+            }
+            return field.group === "category"
+                ? record[field.name].toArray().join("\\")
+                : `${record[field.name]}`;
+        }
+        /**
+         * Formats the date value.
+         * @param date - The date.
+         */
+        function formatDate(date: Date) {
+            function formatDigits(value: number) {
+                return `0${value}`.substring(value >= 10 ? 1 : 0);
+            }
+            const [year, month, day] = [date.getFullYear(), date.getMonth(), date.getDay() + 1];
+            return `${year}-${formatDigits(month)}-${formatDigits(day)}`;
+        }
+
+        /////////////////////////////////////////////
+        // Start Processing
+        /////////////////////////////////////////////
+
+        if (!Number.isInteger(subsetId)) {
+            throw new BadRequest(`Invalid subset id; subsetId=${subsetId}`);
+        }
+        const subset = base.store("Subsets")[subsetId] as ISubsetRecord;
+        if (!subset || subset.deleted) {
+            throw new BadRequest(`Invalid subset id; subsetId=${subsetId}`);
+        }
+        // prepare the document values
+        const stringToReplaceCommas = "&&&&";
+        const documents = subset.hasElements.map((doc) =>
+            fields.map((field) => {
+                // format the document values and replace commas
+                const value = formatDocumentField(doc, field);
+                return value.replace(/,/g, stringToReplaceCommas);
+            })
+        );
+        // join the documents with an ew line in between them
+        let csv = `"${documents.join('"\n"').replace(/,/g, '","')}"`;
+        csv = csv.replace(new RegExp(`${stringToReplaceCommas}`, "g"), ",");
+        csv = `${fields.map((field) => field.name).join(",")}\n${csv}`;
+
+        // create the file name and write the content
+        const filetime = formatDate(new Date());
+        const filedocs = `${subset.hasElements.length}`;
+        const filelabel = subset.label.replace(/[ (<=>&,;\\!|\/)]+/g, "");
+        const filerand = Math.random().toString().slice(2);
+        // create the file and write to it
+        const filename = `${filetime}-${filedocs}-${filelabel}-${filerand}.csv`;
+        const filepath = resolve(TMP_DOWNLOAD_PATH, filename);
+        fs.writeFileSync(filepath, csv, "utf8");
+        // return the filepath
+        return { filepath };
     }
 }

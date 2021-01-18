@@ -6,7 +6,7 @@
     "scripts": {
         "clean": "rm -rf ./data && rm -rf ./tmp && cd ./load && node downgrade && node upgrade",
         "start": "ts-node ./src/server.ts --DEV_MODE",
-        "start:dev": "tsnd --respawn ./src/server.ts --DEV_MODE",
+        "start:watch": "tsnd --respawn ./src/server.ts --DEV_MODE",
         "build": "tsc --project .",
         "postbuild": "cpy --cwd=src --parents '**/*.json' ../dist/",
         "deploy": "npm run build && node ./dist/server.js",

@@ -40,6 +40,18 @@ process.on("SIGUSR2", gracefulShutdown);
 process.on("uncaughtException", gracefulShutdown);
 
 // //////////////////////////////////////////////
+// Initialize the folder creations
+// //////////////////////////////////////////////
+
+// import static data paths
+import { createFolder } from "./utils/FileSystem";
+import { DATA_PATH, TMP_DOWNLOAD_PATH } from "./config/static";
+
+// initialize the data and temporary folders
+createFolder(DATA_PATH);
+createFolder(TMP_DOWNLOAD_PATH);
+
+// //////////////////////////////////////////////
 // Get process parameters
 // //////////////////////////////////////////////
 

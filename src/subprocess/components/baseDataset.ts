@@ -405,6 +405,14 @@ export default class BaseDataset {
         );
     }
 
+    /**
+     * Downloads the file containing the subset documents.
+     * @param subsetId - The subset ID.
+     */
+    downloadSubset(subsetId: number) {
+        return subsetManager.downloadSubset(this.base as qm.Base, subsetId, this.fields);
+    }
+
     /////////////////////////////////////////////
     // METHOD HANDLERS
     /////////////////////////////////////////////
@@ -506,23 +514,15 @@ export default class BaseDataset {
     async _clusteringKMeansSubsets(method: IMethodRecord) {
         const result = method.result;
         for (const cluster of result?.clusters) {
-            // assign the cluster subset
-            const label = cluster.topFeatures
-                .slice(0, 4)
-                .map((obj: any) => obj.feature)
-                .join(", ");
-            const subsets = await this._createMethodSubset(label, method, cluster.docIds);
             // assign the subset ID to the cluster
-            cluster.subsetId = subsets.id;
+            cluster.subsetId = await this._createMethodSubset(cluster, method);
         }
         if (result?.empty) {
             // assign the empty cluster subset
-            const subsets = await this._createMethodSubset(
-                "EMPTY CLUSTER",
-                method,
-                result.empty.docIds
+            result.empty.subsetId = await this._createMethodSubset(
+                { label: "EMPTY CLUSTER", docIds: result.empty.docIds },
+                method
             );
-            result.empty.subsetId = subsets.id;
         }
         // reassign the results
         method.result = result;
@@ -533,19 +533,10 @@ export default class BaseDataset {
      * @param method - The method record.
      */
     async _activeLearningSubsets(method: IMethodRecord) {
-        /** Creates the subsets using the active learning metadata. */
-        const createSubset = async (metadata: any) => {
-            const label = metadata.features
-                .slice(0, 4)
-                .map((obj: any) => obj.feature)
-                .join(", ");
-            const subsets = await this._createMethodSubset(label, method, metadata.docIds);
-            return subsets.id;
-        };
         // create the subsets
         const result = method.result as any;
-        result.positive.subsetId = await createSubset(result.positive);
-        result.negative.subsetId = await createSubset(result.negative);
+        result.positive.subsetId = await this._createMethodSubset(result.positive, method);
+        result.negative.subsetId = await this._createMethodSubset(result.negative, method);
         method.result = result;
     }
 
@@ -555,9 +546,17 @@ export default class BaseDataset {
      * @param method - The method that created the subset.
      * @param docIds - The array of document IDs.
      */
-    async _createMethodSubset(label: string, method: IMethodRecord, docIds: number[]) {
+    async _createMethodSubset(metadata: any, method: IMethodRecord) {
+        const label = metadata.features
+            ? metadata.features
+                  .slice(0, 4)
+                  .map((obj: any) => obj.feature)
+                  .join(", ")
+            : metadata.label;
         // get the cluster documents
-        const documents = this.base?.store("Dataset").newRecordSet(new qm.la.IntVector(docIds));
+        const documents = this.base
+            ?.store("Dataset")
+            .newRecordSet(new qm.la.IntVector(metadata.docIds));
         // create the new subset
         const { subsets } = await this.createSubset({
             label: label,
@@ -602,6 +601,7 @@ export default class BaseDataset {
     /**
      * Gets the specific document.
      * @param documentId - The document ID.
+     * @param params - The document parameters.
      */
     updateDocument(documentId: number, params: any) {
         return documentManager.updateDocument(this.base as qm.Base, documentId, params);

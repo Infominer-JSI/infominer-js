@@ -121,7 +121,8 @@ export default class DocumentManager {
      * @param documentId - The document ID.
      * @param params - The document metadata.
      */
-    updateDocument(base: qm.Base, documentId: number, params: any) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    updateDocument(base: qm.Base, documentId: number, _params: any) {
         if (!Number.isInteger(documentId)) {
             throw new BadRequest(`Invalid document id; documentId=${documentId}`);
         }
