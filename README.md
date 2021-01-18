@@ -21,7 +21,7 @@ The (semi-)automatic data exploration and topic ontology creation tool.
 
 -   **Create the `.env` file in the [./env][env] folder and configure it accordingly**
 
-    **NOTE:** If one setup the postgres docker container make sure to use the `TARGET` port
+    **NOTE:** If one setup the postgres docker container make sure to use the **TARGET** port
     (see [Database Configuration](#database-configuration)).
 
 ## Database Configuration
@@ -30,7 +30,7 @@ This repository contains the code used to create the infominer database.
 While the advised approach is to create a [postgres docker container][postgres-docker],
 one can set up and install the [postgres database][postgres-manual].
 
--   **(optional) Start the postgres docker container**
+1.  **(optional) Start the postgres docker container**
 
     -   Navigate into the docker folder
 
@@ -40,12 +40,12 @@ one can set up and install the [postgres database][postgres-manual].
 
     -   Modify the following fields in [docker-compose.yml][docker-compose]:
 
-        -   `POSTGRES_PASSWORD`: make sure it is secure
+        -   **POSTGRES_PASSWORD**: make sure it is secure
 
-        -   (optional) `ports`: This value sets the mapping/tunnel between the container and system.
-            The format is `TARGET:CONTAINER` where `TARGET` is the port number of the system which
-            is redirected to the containers port number `CONTAINER`. This will enable the user to
-            access the database through the `TARGET` port. If required, modify the `TARGET` port number,
+        -   (optional) **ports**: This value sets the mapping/tunnel between the container and system.
+            The format is `TARGET:CONTAINER` where **TARGET** is the port number of the system which
+            is redirected to the containers port number **CONTAINER**. This will enable the user to
+            access the database through the **TARGET** port. If required, modify the **TARGET** port number,
             i.e. `4110`.
 
     -   Start the containers:
@@ -81,8 +81,8 @@ one can set up and install the [postgres database][postgres-manual].
         ```
 
     **Data Persistence.** The data stored in the postgres database via docker will be persistent.
-    The `volumes` configuration are setup so that the database is stored in one of the volumes
-    found in `/var/lib/docker/volumes` folder (in this case it will be named `docker_infominer_db-data`).
+    The **volumes** configuration are setup so that the database is stored in one of the volumes
+    found in **/var/lib/docker/volumes** folder (in this case it will be named `docker_infominer-db`).
     If one would stop the container and run it again it will take the data found in the defined
     volume.
 
@@ -110,7 +110,7 @@ one can set up and install the [postgres database][postgres-manual].
         sudo docker volume rm docker_infominer-db
         ```
 
--   **Initialize the database tables.** To initialize the table one must simply run the following command:
+2.  **Initialize the database tables.** To initialize the table one must simply run the following command:
 
     ```bash
     node ./load/upgrade
@@ -119,7 +119,7 @@ one can set up and install the [postgres database][postgres-manual].
     This will create the required infominer tables. The table definitions are defined in files found in
     the [./load/postgres][postgres-defs] folder.
 
--   **Downgrading the database tables.** To remove all of the database tables simply run the following
+3.  **Downgrading the database tables.** To remove all of the database tables simply run the following
     command:
 
     ```bash
@@ -198,9 +198,9 @@ To dockerize infominer one can simply run the following command:
 npm run dockerize
 ```
 
-This will create a docker image `eriknovak/infominer-backend`. To make your own image, change the
-username part of the image name in `package.json`, e.g. `{username}/infominer-backend` of the
-`dockerize` script command.
+This will create a docker image **eriknovak/infominer-backend**. To make your own image, change the
+username part of the image name in `package.json`, e.g. **{username}/infominer-backend** of the
+**dockerize** script command.
 
 ## Start the container using `docker run`
 
@@ -224,17 +224,17 @@ docker run \
 The above command sets the port mapping, assigns the network in which the docker container will run in and provide
 environmental variables to infominer. Lets dissect the above command.
 
-| command part | command value               | description                                                                      |
-| ------------ | --------------------------- | -------------------------------------------------------------------------------- |
-| `-p`         | 8100:8100                   | The `TARGET:CONTAINER` port mapping                                              |
-| `--name`     | infominer-backend           | Name of the container to be run. Used to access it instead of its `CONTAINER ID` |
-| `--network`  | docker_infominer            | The network on which it runs. Same as `infominer-db` (see above).                |
-| `-e`         | PG_HOST=infominer-db        | ENV. The PG host is the container name.                                          |
-| `-e`         | PG_PORT=5432                | ENV. The PG port on which it is listening.                                       |
-| `-e`         | PG_USER=postgres            | ENV. The PG user that will access the database.                                  |
-| `-e`         | PG_PASSWORD=password        | ENV. The PG user password.                                                       |
-| `-e`         | PG_DATABASE=infominer       | ENV. The PG database.                                                            |
-| `-d`         | eriknovak/infominer-backend | Run the container in detach mode (running in the background).                    |
+| command part | command value               | description                                                                        |
+| ------------ | --------------------------- | ---------------------------------------------------------------------------------- |
+| `-p`         | 8100:8100                   | The **TARGET:CONTAINER** port mapping                                              |
+| `--name`     | infominer-backend           | Name of the container to be run. Used to access it instead of its **CONTAINER ID** |
+| `--network`  | docker_infominer            | The network on which it runs. Same as **infominer-db** (see above).                |
+| `-e`         | PG_HOST=infominer-db        | ENV. The PG host is the container name.                                            |
+| `-e`         | PG_PORT=5432                | ENV. The PG port on which it is listening.                                         |
+| `-e`         | PG_USER=postgres            | ENV. The PG user that will access the database.                                    |
+| `-e`         | PG_PASSWORD=password        | ENV. The PG user password.                                                         |
+| `-e`         | PG_DATABASE=infominer       | ENV. The PG database.                                                              |
+| `-d`         | eriknovak/infominer-backend | Run the container in detach mode (running in the background).                      |
 
 ## Start the container using `docker-compose`
 
