@@ -187,6 +187,12 @@ const routeDefs = [
         middleware: validators.subsets,
         controller: controllers.deleteSubset,
     },
+    {
+        method: "GET",
+        route: "/datasets/:datasetId/subsets/:subsetId/download",
+        middleware: validators.subsets,
+        controller: controllers.downloadSubset,
+    },
     // //////////////////////////////////////////////
     // Documents routes
     // //////////////////////////////////////////////

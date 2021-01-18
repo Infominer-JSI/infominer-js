@@ -110,6 +110,17 @@ const generalUserResponse = (_req: Request, res: Response, next: NextFunction) =
     results?: any
 ) => (error ? next(error) : res.status(200).json(results));
 
+// specific function to handle the child filedownload
+const downloadUserResponse = (_req: Request, res: Response, next: NextFunction) => (
+    error?: Error,
+    results?: any
+) =>
+    error
+        ? next(error)
+        : res.status(200).download(results.filepath, () => {
+              removeFile(results.filepath);
+          });
+
 // creates a general request wrapper
 async function generalRequestWrapper(
     req: Request,
@@ -120,6 +131,18 @@ async function generalRequestWrapper(
     const { id, owner, cmd, content } = await callback();
     const message = { cmd, content };
     sendToProcess(id, owner, message, generalUserResponse(req, res, next));
+}
+
+// creates a general request wrapper
+async function downloadRequestWrapper(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+    callback: TRequestCallback
+) {
+    const { id, owner, cmd, content } = await callback();
+    const message = { cmd, content };
+    sendToProcess(id, owner, message, downloadUserResponse(req, res, next));
 }
 
 // create the dataset process
@@ -158,4 +181,10 @@ async function deleteDatasetProcess(record: any) {
     }
 }
 
-export { processControl, generalRequestWrapper, createDatasetProcess, deleteDatasetProcess };
+export {
+    processControl,
+    generalRequestWrapper,
+    downloadRequestWrapper,
+    createDatasetProcess,
+    deleteDatasetProcess,
+};

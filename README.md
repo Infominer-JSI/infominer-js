@@ -46,7 +46,7 @@ one can set up and install the [postgres database][postgres-manual].
             The format is `TARGET:CONTAINER` where `TARGET` is the port number of the system which
             is redirected to the containers port number `CONTAINER`. This will enable the user to
             access the database through the `TARGET` port. If required, modify the `TARGET` port number,
-            i.e. `5440`.
+            i.e. `4110`.
 
     -   Start the containers:
 
@@ -54,7 +54,7 @@ one can set up and install the [postgres database][postgres-manual].
         sudo docker-compose up -d
         ```
 
-        This will start the postgres docker container. One can check if it is running with
+        This will start the postgres docker container. One can check if it is running with:
 
         ```bash
         sudo docker ps
@@ -63,8 +63,15 @@ one can set up and install the [postgres database][postgres-manual].
         The response should be something like this:
 
         ```bash
-        CONTAINER ID  IMAGE        COMMAND                 CREATED      STATUS      PORTS                   NAMES
-        52ac627f9966  postgres:13  "docker-entrypoint.s…"  2 hours ago  Up 2 hours  0.0.0.0:5440->5432/tcp  docker_infominer_db_1
+        CONTAINER ID  IMAGE        COMMAND                 CREATED        STATUS        PORTS                   NAMES
+        52ac627f9966  postgres:13  "docker-entrypoint.s…"  5 seconds ago  Up 4 seconds  0.0.0.0:4110->5432/tcp  docker_infominer_db_1
+        ```
+
+    -   (bonus) Stop the containers. This will stop all of the docker containers that are specified in
+        `docker-compose.yml` file. Run it only when you do not need the database anymore.
+
+        ```bash
+        sudo docker-compose down
         ```
 
     -   Navigate to the project root
@@ -79,9 +86,31 @@ one can set up and install the [postgres database][postgres-manual].
     If one would stop the container and run it again it will take the data found in the defined
     volume.
 
--   **Initialize the database tables**
+    To remove the persistent volume from the machine, one can follow these steps. **NOTE:** Before following
+    the steps make sure to stop the docker container (see previous bonus point).
 
-    To initialize the table one must simply run the following command:
+    1. **Identify the name of the volume.** To get the list of all docker volumes run the following command:
+
+        ```bash
+        sudo docker volume ls
+        ```
+
+        This will output all of the docker volumes:
+
+        ```bash
+        DRIVER  VOLUME NAME
+        local   docker_infominer_db-data
+        ```
+
+        The infominer database is named `docker_infominer_db-data`.
+
+    2. **Delete the docker volume.** To remove the volume run:
+
+        ```bash
+        sudo docker volume rm docker_infominer_db-data
+        ```
+
+-   **Initialize the database tables.** To initialize the table one must simply run the following command:
 
     ```bash
     node ./load/upgrade
@@ -90,14 +119,21 @@ one can set up and install the [postgres database][postgres-manual].
     This will create the required infominer tables. The table definitions are defined in files found in
     the [./load/postgres][postgres-defs] folder.
 
+-   **Downgrading the database tables.** To remove all of the database tables simply run the following
+    command:
+
+    ```bash
+    node ./load/downgrade
+    ```
+
 ## Start
 
 To start the project run the following command:
 
 ```bash
+# run in development:watch mode (respawns the service when changes in file happen)
+npm run start:watch
 # run in development mode
-npm run start:dev
-# run in production mode
 npm start
 ```
 
@@ -108,6 +144,31 @@ To build the project run the following command:
 ```bash
 npm run build
 ```
+
+## Deploy
+
+To build and run the service in production mode run the the following command:
+
+```bash
+npm run deploy
+```
+
+If the project is already built one can also start it with:
+
+```bash
+node ./dist/server
+```
+
+## Clean
+
+During the development process there might appear a lot of temporary files and invalid data bases.
+To remove all of the temporary files, data bases, and clean the postgreSQL database, one can run:
+
+```bash
+npm run clean
+```
+
+**NOTE:** This will make the project as if no-one ever used it.
 
 [postgres-docker]: https://hub.docker.com/_/postgres
 [postgres-manual]: https://www.postgresql.org/download/

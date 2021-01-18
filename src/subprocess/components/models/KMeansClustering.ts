@@ -146,7 +146,7 @@ export default class KMeansClustering extends ModelBasic {
                 mean: -1,
                 std: -1,
             },
-            topFeatures: [] as { feature: string | number; weight: number }[],
+            features: [] as { feature: string | number; weight: number }[],
             docIds: [] as number[],
             subsetId: -1,
         }));
@@ -212,7 +212,7 @@ export default class KMeansClustering extends ModelBasic {
                     // break when we get to the end of the feature list
                     break;
                 }
-                clusters[parseInt(clusterId)].topFeatures.push({ feature, weight });
+                clusters[parseInt(clusterId)].features.push({ feature, weight });
             }
         }
         // assign the clusters

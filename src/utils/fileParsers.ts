@@ -77,7 +77,7 @@ function validateValue(value: string) {
         return LABEL2ID.datetime;
     } else if (category && category.length === 1 && category[0] === value) {
         return LABEL2ID.category;
-    } else if (xclass && xclass.length === 1 && xclass[0] === value) {
+    } else if ((xclass && xclass.length === 1 && xclass[0] === value) || value.length <= 20) {
         return LABEL2ID.class;
     } else {
         return LABEL2ID.text;

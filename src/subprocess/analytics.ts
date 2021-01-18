@@ -85,6 +85,9 @@ function messageHandler(message: IParentMsg) {
         case EParentCmd.DELETE_SUBSET:
             deleteSubset(message);
             break;
+        case EParentCmd.DOWNLOAD_SUBSET:
+            downloadSubset(message);
+            break;
 
         /////////////////////////////
         // METHOD COMMANDS
@@ -256,6 +259,15 @@ async function deleteSubset(message: IParentMsg) {
         const { subsetId } = body?.content;
         const isDeleted = (baseDataset as BaseDataset).deleteSubset(subsetId);
         return { subsets: { id: subsetId, isDeleted } };
+    });
+}
+
+// download the subset
+async function downloadSubset(message: IParentMsg) {
+    await _functionWrapper(message, async (body) => {
+        const { subsetId } = body?.content;
+        const results = (baseDataset as BaseDataset).downloadSubset(subsetId);
+        return results;
     });
 }
 

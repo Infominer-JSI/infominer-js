@@ -9,7 +9,7 @@ import { Request, Response, NextFunction } from "express";
 import { EParentCmd } from "../../interfaces";
 
 // import utils
-import { generalRequestWrapper } from "../../utils/processHandlers";
+import { generalRequestWrapper, downloadRequestWrapper } from "../../utils/processHandlers";
 import { parseParams, parseBody, parseCredentials } from "../../utils/requestParsers";
 
 // //////////////////////////////////////////////
@@ -83,6 +83,20 @@ export const deleteSubset = (req: Request, res: Response, next: NextFunction) =>
         const { datasetId, subsetId } = parseParams(req);
         // assign the command
         const cmd = EParentCmd.DELETE_SUBSET;
+        // return the values
+        return { id: datasetId, owner, cmd, content: { subsetId } };
+    });
+};
+
+// downloads the subset
+export const downloadSubset = (req: Request, res: Response, next: NextFunction) => {
+    return downloadRequestWrapper(req, res, next, () => {
+        // TODO: check request structure
+        // parse the request
+        const { owner } = parseCredentials(req);
+        const { datasetId, subsetId } = parseParams(req);
+        // assign the command
+        const cmd = EParentCmd.DOWNLOAD_SUBSET;
         // return the values
         return { id: datasetId, owner, cmd, content: { subsetId } };
     });
