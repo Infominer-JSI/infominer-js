@@ -160,18 +160,7 @@ If the project is already built one can also start it with:
 node ./dist/server
 ```
 
-## Clean
-
-During the development process there might appear a lot of temporary files and invalid data bases.
-To remove all of the temporary files, data bases, and clean the postgreSQL database, one can run:
-
-```bash
-npm run clean
-```
-
-**NOTE:** This will make the project as if no-one ever used it.
-
-## PM2
+### PM2 - NodeJS Process Manager
 
 To run Infominer in a more production setting one can use [PM2][pm2], a NodeJS process manager. To install
 it simply run
@@ -190,6 +179,17 @@ pm2 start ecosytem.config.yml
 ```
 
 This will monitor the project.
+
+## Clean
+
+During the development process there might appear a lot of temporary files and invalid data bases.
+To remove all of the temporary files, data bases, and clean the postgreSQL database, one can run:
+
+```bash
+npm run clean
+```
+
+**NOTE:** This will make the project as if no-one ever used it.
 
 # Dockerization
 
