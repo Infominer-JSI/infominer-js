@@ -24,8 +24,11 @@ services:
       - postgres
     environment:
       - PG_HOST=postgres
+      - PG_PORT=5432
+      - PG_USER=postgres
       - PG_PASSWORD=password
       - PG_DATABASE=infominer
+      - PG_CONNECTION_TIMEOUT=3000
     ports:
       - "8100:8100"
     links:

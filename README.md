@@ -11,6 +11,25 @@ The (semi-)automatic data exploration and topic ontology creation tool.
 -   Docker version 10 or higher, docker-compose v1.23 or higher (required only for setting postgres with docker)
 -   Postgres version 10 or greater (required only if one will not spin up a postgres docker container)
 
+## TL;DR
+
+1. Install the nodejs dependencies and create the **.env** file in the [./env](/env) folder (see [Installation](#installation)).
+   For the **.env**, just copy what it says in the [README](./env/README.md).
+
+2. Start the database and infominer backend containers by running:
+
+    ```bash
+    sudo docker-compose up -d
+    ```
+
+3. Configure the postgres database schema by running:
+
+    ```bash
+    node ./load/upgrade
+    ```
+
+4. Access the backend on `localhost:8100`. See WIKI for API documentation.
+
 ## Installation
 
 -   **Install the nodejs dependencies**
@@ -21,7 +40,7 @@ The (semi-)automatic data exploration and topic ontology creation tool.
 
 -   **Create the `.env` file in the [./env][env] folder and configure it accordingly**
 
-    **NOTE:** If one setup the postgres docker container make sure to use the **TARGET** port
+    **NOTE:** If setting up the postgres docker container make sure to use the **TARGET** port
     (see [Database Configuration](#database-configuration)).
 
 ## Database Configuration
