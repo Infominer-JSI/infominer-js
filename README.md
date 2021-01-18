@@ -282,6 +282,11 @@ sudo docker-compose up -d --build backend
 The `--build` option is required only if you want to build the backend docker image anew. Otherwise,
 it will use the old docker image version to create the container.
 
+Running this way will also create two additional docker volumes:
+
+- **infominer-backend_imdata.** This is where the QMiner bases will be stored.
+- **infominer-backend_imlogs.** This is where the service logs will be saved.
+
 To stop and remove the backend container run:
 
 ```bash
