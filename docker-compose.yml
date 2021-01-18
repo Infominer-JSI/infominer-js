@@ -1,0 +1,49 @@
+version: "3.1"
+
+services:
+  postgres:
+    image: postgres:13
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=infominer
+    ports:
+      - "4110:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    container_name: postgres
+    networks:
+      infominer:
+
+  backend:
+    build: .
+    image: infominer/backend
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      - PG_HOST=postgres
+      - PG_PORT=5432
+      - PG_USER=postgres
+      - PG_PASSWORD=password
+      - PG_DATABASE=infominer
+      - PG_CONNECTION_TIMEOUT=3000
+    ports:
+      - "8100:8100"
+    links:
+      - postgres
+    volumes:
+      - imdata:/usr/src/infominer/data
+      - imlogs:/usr/src/infominer/logs
+    container_name: backend
+    networks:
+      infominer:
+
+networks:
+  infominer:
+
+volumes:
+  pgdata:
+  imdata:
+  imlogs:

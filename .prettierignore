@@ -1,8 +1,9 @@
-# ignore the docker-compose file
+# docker files
 docker-compose.yml
-# ignore tools files
-tools
-# ignore CI & CD configs
+
+# CI & CD configs
 .travis.yml
 .huskyrc
 
+# PM2 configs
+ecosystem.config.yml

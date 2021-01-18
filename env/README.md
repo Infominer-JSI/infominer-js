@@ -9,11 +9,10 @@ This approach requires the `dotenv` module (which is installed by running the
 
 **One must create the `.env` file by hand since it is ignored in the project.**
 
-## .env File Structure
+## .env
 
 What follows is an example of the `.env` file structure. The values behind the
-equal sign are the default values used by Infominer. Values associated with the
-curly brackets do not have a default value and must be modified by the user.
+equal sign are the default values used by Infominer.
 
 ```bash
 #######################################
@@ -24,7 +23,7 @@ PG_HOST=127.0.0.1
 PG_PORT=4110
 PG_DATABASE=infominer
 PG_USERNAME=postgres
-PG_PASSWORD={password}
+PG_PASSWORD=password
 PG_CONNECTION_TIMEOUT=3000
 
 ```
