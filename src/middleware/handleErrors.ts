@@ -15,13 +15,11 @@ const handleErrors = (error: Error, req: Request, res: Response, _next: NextFunc
     // return the error
     if (error instanceof GeneralError) {
         return res.status(error.statusCode).json({
-            status: "error",
             message: error.output,
             code: error.statusCode,
         });
     }
     return res.status(500).json({
-        status: "error",
         message: "Server Side Error",
         code: 500,
     });

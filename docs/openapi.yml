@@ -23,11 +23,10 @@ paths:
                 type: object
                 properties:
                   datasets:
-                    description: The array of datasets.
+                    description: "The array of datasets."
                     type: array
                     items:
                       $ref: "#/components/schemas/Dataset"
-
     post:
       summary: "Upload a dataset file"
       description:
@@ -46,7 +45,7 @@ paths:
             schema:
               properties:
                 file:
-                  description: The dataset file.
+                  description: "The dataset file."
                   type: string
                   format: binary
               required:
@@ -60,11 +59,10 @@ paths:
                 type: object
                 $ref: "#/components/schemas/FileMetadata"
         '400':
-          description: The file is not formatted correctly.
+          description: Bad Request
           content:
             application/json:
               schema:
-                type: object
                 $ref: "#/components/schemas/BadRequest"
 
   /datasets/{datasetId}:
@@ -212,22 +210,57 @@ components:
     # ERROR SCHEMAS
     # =============================================
 
-    BadRequest:
+    Error:
       type: object
       properties:
-        status:
-          type: string
-          default: "error"
         message:
           type: string
+          description: "The error message."
           default: "Bad Request"
         code:
           type: integer
-          default: 400
-      required:
-        - status
-        - message
-        - code
+          format: "int32"
+          description: "The error status code."
+
+    BadRequest:
+      allOf:
+        - $ref: "#/components/schemas/Error"
+        - type: object
+          properties:
+            message:
+              default: "Bad Request"
+            code:
+              default: 400
+
+    UserNotAuhtorized:
+      allOf:
+        - $ref: "#/components/schemas/Error"
+        - type: object
+          properties:
+            message:
+              default: "User Not Authorized"
+            code:
+              default: 401
+
+    RouteNotFound:
+      allOf:
+        - $ref: "#/components/schemas/Error"
+        - type: object
+          properties:
+            message:
+              default: "Route Not Found"
+            code:
+              default: 404
+
+    ServerError:
+      allOf:
+        - $ref: "#/components/schemas/Error"
+        - type: object
+          properties:
+            message:
+              default: "Server Side Error"
+            code:
+              default: 500
 
     # =============================================
     # UPLOAD SCHEMAS
@@ -243,14 +276,19 @@ components:
             id:
               type: integer
               description: "The dataset ID."
+              minimum: 1
+              example: 10
             filename:
               type: string
               description: "The uploaded file name."
+              example: "secret-file.csv"
             delimiter:
               type: string
               description: "The identified delimiter."
+              example: ";"
             fields:
               type: array
+              description: "The identified fields in the file."
               items:
                 $ref: "#/components/schemas/FileField"
             metadata:
@@ -259,15 +297,18 @@ components:
               properties:
                 types:
                   type: array
+                  description: "Possible field types."
                   items:
                     type: string
                     enum: ["number", "text", "class", "category", "datetime"]
-                  minItems: 1
+                  example: ["number", "text", "class", "category", "datetime"]
                 stopwords:
                   type: object
+                  description: "The stopwords metadata."
                   properties:
                     languages:
                       type: array
+                      description: "The array of all infominer supported stopwords."
                       items:
                         type: object
                         properties:
@@ -277,19 +318,29 @@ components:
                           value:
                             type: string
                             description: "The language value."
-                            minimum: 2
-                            maximum: 2
+                            minLength: 2
+                            maxLength: 2
+                      example: [
+                        { label: "English", value: "en" },
+                        { label: "German", value: "de" },
+                        { label: "Slovene", value: "si" },
+                        { label: "Spanish", value: "es" },
+                        { label: "None", value: "none" },
+                      ]
 
     FileField:
       type: object
+      description: "The field metadata."
       properties:
         name:
           type: string
           description: "The field name."
+          example: "label"
         type:
           type: string
           enum: ["number", "text", "class", "category", "datetime"]
           description: "The suggested field type."
+          example: "class"
         included:
           type: boolean
           default: true
@@ -313,32 +364,36 @@ components:
         name:
           type: string
           description: "The dataset name."
+          example: "Secret Data"
         description:
           type: string
+          nullable: true
           description: "The dataset description."
+          example: "The dataset containing the secret information."
         nDocuments:
           type: integer
           description: "The number of documents in the dataset."
+          example: 42000
         created:
           type: string
           format: datetime
           description: "The dataset creation date."
+          example: "2021-01-19"
         status:
           type: string
           enum: ["IN_QUEUE", "LOADING", "FINISHED"]
           description: "The status of the dataset creation."
+          example: "FINISHED"
         group:
           type: string
           description: "In which group the dataset belongs to."
+          nullable: true
+          example: null
         order:
           type: integer
           description: "The order of the dataset in the group."
-      required:
-        - type
-        - id
-        - name
-        - created
-        - status
+          nullable: true
+          example: null
 
     # =============================================
     # SUBSET SCHEMAS
