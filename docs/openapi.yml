@@ -12,36 +12,87 @@ paths:
 
   /datasets:
     get:
+      summary: "Get all datasets"
+      description: "Gets all of the owner datasets."
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  datasets:
+                    description: The array of datasets.
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Dataset"
+
     post:
+      summary: "Upload a dataset file"
+      description:
+        "Uploads a dataset file (.csv) with with the following structure: \n
+
+        - **Header.** The first line contains the names of the data columns.\n
+
+        - **Rows.** The reminder of the lines contain the row values. \n
+
+        Both the header and row values are separated by a delimiter. **Supported delimiters:**
+        comma, semicolon, pipe, and tilde.
+        "
+      requestBody:
+        content:
+          'multipart/form-data':
+            schema:
+              properties:
+                file:
+                  description: The dataset file.
+                  type: string
+                  format: binary
+              required:
+              - file
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: "#/components/schemas/FileMetadata"
+        '400':
+          description: The file is not formatted correctly.
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: "#/components/schemas/BadRequest"
 
   /datasets/{datasetId}:
     post:
-      description:
-        "Posts the file metadata"
+      summary: "Create a dataset"
+      description: "Uploads the file metadata to create a new dataset."
       responses:
         '200':
           description: OK
     get:
+      summary: "Get the dataset"
       responses:
         '200':
           description: OK
     put:
+      summary: "Update the dataset"
       responses:
         '200':
           description: OK
     delete:
+      summary: "Delete the dataset"
       responses:
         '200':
           description: OK
 
   /datasets/{datasetId}/status:
     get:
+      summary: "Check the dataset upload status"
       responses:
         '200':
           description: OK
@@ -52,30 +103,36 @@ paths:
 
   /datasets/{datasetId}/methods:
     get:
+      summary: "Get all methods"
       responses:
         '200':
           description: OK
     post:
+      summary: "Execute a method"
       responses:
         '200':
           description: OK
 
   /datasets/{datasetId}/methods/{methodId}:
     get:
+      summary: "Get the method"
       responses:
         '200':
           description: OK
     put:
+      summary: "Update the method"
       responses:
         '200':
           description: OK
     delete:
+      summary: "Delete the method"
       responses:
         '200':
           description: OK
 
   /datasets/{datasetId}/methods/{methodId}/status:
     get:
+      summary: "Check the method creation status"
       responses:
         '200':
           description: OK
@@ -86,30 +143,36 @@ paths:
 
   /datasets/{datasetId}/subsets:
     get:
+      summary: "Get all subsets"
       responses:
         '200':
           description: OK
     post:
+      summary: "Create a subset"
       responses:
         '200':
           description: OK
 
   /datasets/{datasetId}/subsets/{subsetId}:
     get:
+      summary: "Get a subset"
       responses:
         '200':
           description: OK
     put:
+      summary: "Update a subset"
       responses:
         '200':
           description: OK
     delete:
+      summary: "Delete a subset"
       responses:
         '200':
           description: OK
 
   /datasets/{datasetId}/subsets/{subsetId}/download:
     get:
+      summary: "Download a subset"
       responses:
         '200':
           description: OK
@@ -120,16 +183,169 @@ paths:
 
   /datasets/{datasetId}/documents:
     get:
+      summary: "Get some documents"
       responses:
         '200':
           description: OK
 
   /datasets/{datasetId}/documents/{documentId}:
     get:
+      summary: "Get a document"
       responses:
         '200':
           description: OK
     put:
+      summary: "Update a document"
       responses:
         '200':
           description: OK
+
+
+# =============================================
+# COMPONENTS
+# =============================================
+
+components:
+  schemas:
+
+    # =============================================
+    # ERROR SCHEMAS
+    # =============================================
+
+    BadRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          default: "error"
+        message:
+          type: string
+          default: "Bad Request"
+        code:
+          type: integer
+          default: 400
+      required:
+        - status
+        - message
+        - code
+
+    # =============================================
+    # UPLOAD SCHEMAS
+    # =============================================
+
+    FileMetadata:
+      type: object
+      properties:
+        dataset:
+          type: object
+          description: "The file metadata."
+          properties:
+            id:
+              type: integer
+              description: "The dataset ID."
+            filename:
+              type: string
+              description: "The uploaded file name."
+            delimiter:
+              type: string
+              description: "The identified delimiter."
+            fields:
+              type: array
+              items:
+                $ref: "#/components/schemas/FileField"
+            metadata:
+              type: object
+              description: "The metadata available for selection."
+              properties:
+                types:
+                  type: array
+                  items:
+                    type: string
+                    enum: ["number", "text", "class", "category", "datetime"]
+                  minItems: 1
+                stopwords:
+                  type: object
+                  properties:
+                    languages:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          label:
+                            type: string
+                            description: "The full name of the language."
+                          value:
+                            type: string
+                            description: "The language value."
+                            minimum: 2
+                            maximum: 2
+
+    FileField:
+      type: object
+      properties:
+        name:
+          type: string
+          description: "The field name."
+        type:
+          type: string
+          enum: ["number", "text", "class", "category", "datetime"]
+          description: "The suggested field type."
+        included:
+          type: boolean
+          default: true
+
+
+    # =============================================
+    # DATASET SCHEMAS
+    # =============================================
+
+    Dataset:
+      type: object
+      properties:
+        type:
+          type: string
+          description: "The dataset type."
+          default: "dataset"
+        id:
+          type: integer
+          description: "The dataset ID."
+          minimum: 1
+        name:
+          type: string
+          description: "The dataset name."
+        description:
+          type: string
+          description: "The dataset description."
+        nDocuments:
+          type: integer
+          description: "The number of documents in the dataset."
+        created:
+          type: string
+          format: datetime
+          description: "The dataset creation date."
+        status:
+          type: string
+          enum: ["IN_QUEUE", "LOADING", "FINISHED"]
+          description: "The status of the dataset creation."
+        group:
+          type: string
+          description: "In which group the dataset belongs to."
+        order:
+          type: integer
+          description: "The order of the dataset in the group."
+      required:
+        - type
+        - id
+        - name
+        - created
+        - status
+
+    # =============================================
+    # SUBSET SCHEMAS
+    # =============================================
+
+
+
+    # =============================================
+    # METHOD SCHEMAS
+    # =============================================
