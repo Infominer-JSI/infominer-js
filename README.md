@@ -13,14 +13,18 @@ The (semi-)automatic data exploration and topic ontology creation tool.
 
 ## TL;DR Setup
 
+IF you are in a hurry, just follow these steps:
+
 1. Install the nodejs dependencies and create the **.env** file in the [./env](/env) folder (see [Installation](#installation)).
    For the **.env**, just copy what it says in the [README](./env/README.md).
 
 2. Start the database and infominer backend containers by running:
 
     ```bash
-    sudo docker-compose up -d
+    sudo docker-compose up -d --build
     ```
+
+    The `--build` option will build the newest backend image.
 
 3. Configure the postgres database schema by running:
 
@@ -49,54 +53,54 @@ This repository contains the code used to create the infominer database.
 While the advised approach is to create a [postgres docker container][postgres-docker],
 one can set up and install the [postgres database][postgres-manual].
 
-1.  **(optional) Start the postgres docker container**
+1. **(optional) Start the postgres docker container**
 
-    -   Modify the following fields in [docker-compose.yml][docker-compose]:
+    Modify the following fields in [docker-compose.yml][docker-compose]:
 
-        **POSTGRES_PASSWORD**: make sure it is secure.
+    - **POSTGRES_PASSWORD**: make sure it is secure.
 
-        (optional) **ports**: This value sets the mapping/tunnel between the container and system.
-        The format is `TARGET:CONTAINER` where **TARGET** is the port number of the system which
-        is redirected to the containers port number **CONTAINER**. This will enable the user to
-        access the database through the **TARGET** port. If required, modify the **TARGET** port number,
-        i.e. `4110`.
+    - (optional) **ports**: This value sets the mapping/tunnel between the container and system.
+      The format is `TARGET:CONTAINER` where **TARGET** is the port number of the system which
+      is redirected to the containers port number **CONTAINER**. This will enable the user to
+      access the database through the **TARGET** port. If required, modify the **TARGET** port number,
+      i.e. `4110`.
 
-    -   Up a new postgres container:
+    Up a new postgres container:
 
-        ```bash
-        sudo docker-compose up -d postgres
-        ```
+    ```bash
+    sudo docker-compose up -d postgres
+    ```
 
-        This will start the postgres container. Check if it is running with:
+    This will start the postgres container. Check if it is running with:
 
-        ```bash
-        sudo docker ps
-        ```
+    ```bash
+    sudo docker ps
+    ```
 
-        The response should be something like this:
+    The response should be something like this:
 
-        ```bash
-        CONTAINER ID  IMAGE        COMMAND                 CREATED        STATUS        PORTS                   NAMES
-        52ac627f9966  postgres:13  "docker-entrypoint.s…"  5 seconds ago  Up 4 seconds  0.0.0.0:4110->5432/tcp  postgres
-        ```
+    ```bash
+    CONTAINER ID  IMAGE        COMMAND                 CREATED        STATUS        PORTS                   NAMES
+    52ac627f9966  postgres:13  "docker-entrypoint.s…"  5 seconds ago  Up 4 seconds  0.0.0.0:4110->5432/tcp  postgres
+    ```
 
-    -   Stop the postgres container:
+    Stop the postgres container:
 
-        ```bash
-        sudo docker-compose stop postgres
-        ```
+    ```bash
+    sudo docker-compose stop postgres
+    ```
 
-    -   Start the postgres container:
+    Start the postgres container:
 
-        ```bash
-        sudo docker-compose start postgres
-        ```
+    ```bash
+    sudo docker-compose start postgres
+    ```
 
-    -   Stop and remove the postgres container:
+    Stop and remove the postgres container:
 
-        ```bash
-        sudo docker-compose rm -s postgres
-        ```
+    ```bash
+    sudo docker-compose rm -s postgres
+    ```
 
     **Data Persistence.** The data stored in the postgres database via docker will be persistent.
     The **volumes** configuration are setup so that the database is stored in one of the volumes
@@ -107,28 +111,28 @@ one can set up and install the [postgres database][postgres-manual].
     To remove the persistent volume from the machine, one can follow these steps. **NOTE:** Before following
     the steps make sure to stop and remove the postgres container (see previous bonus point).
 
-    1. **Identify the name of the volume.** To get the list of all docker volumes run the following command:
+    **Identify the name of the volume.** To get the list of all docker volumes run the following command:
 
-        ```bash
-        sudo docker volume ls
-        ```
+    ```bash
+    sudo docker volume ls
+    ```
 
-        This will output all of the docker volumes:
+    This will output all of the docker volumes:
 
-        ```bash
-        DRIVER  VOLUME NAME
-        local   infominer-backend_pgdata
-        ```
+    ```bash
+    DRIVER  VOLUME NAME
+    local   infominer-backend_pgdata
+    ```
 
-        The infominer database is named `infominer-backend_pgdata`.
+    The infominer database is named `infominer-backend_pgdata`.
 
-    2. **Delete the docker volume.** To remove the volume run:
+    **Delete the docker volume.** To remove the volume run:
 
-        ```bash
-        sudo docker volume rm infominer-backend_pgdata
-        ```
+    ```bash
+    sudo docker volume rm infominer-backend_pgdata
+    ```
 
-2.  **Initialize the database tables.** To initialize the table simply run the following command:
+2. **Initialize the database tables.** To initialize the table simply run the following command:
 
     ```bash
     node ./load/upgrade
@@ -137,8 +141,8 @@ one can set up and install the [postgres database][postgres-manual].
     This will create the required infominer tables. The table definitions are defined in files found in
     the [./load/postgres][postgres-defs] folder.
 
-3.  **Downgrading the database tables.** To remove all of the database tables simply run the following
-    command:
+3. **Downgrading the database tables.** To remove all of the database tables simply run the following
+   command:
 
     ```bash
     node ./load/downgrade
@@ -284,8 +288,8 @@ it will use the old docker image version to create the container.
 
 Running this way will also create two additional docker volumes:
 
-- **infominer-backend_imdata.** This is where the QMiner bases will be stored.
-- **infominer-backend_imlogs.** This is where the service logs will be saved.
+-   **infominer-backend_imdata.** This is where the QMiner bases will be stored.
+-   **infominer-backend_imlogs.** This is where the service logs will be saved.
 
 To stop and remove the backend container run:
 
