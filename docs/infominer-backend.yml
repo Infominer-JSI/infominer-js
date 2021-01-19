@@ -1,0 +1,135 @@
+openapi: '3.0.2'
+info:
+  title: Infominer Backend
+  version: '1.0'
+servers:
+  - url: http://infominer.ijs.si/api/v1/
+paths:
+
+  # =============================================
+  # DATASET ROUTES
+  # =============================================
+
+  /datasets:
+    get:
+      responses:
+        '200':
+          description: OK
+    post:
+      responses:
+        '200':
+          description: OK
+
+  /datasets/{datasetId}:
+    post:
+      description:
+        "Posts the file metadata"
+      responses:
+        '200':
+          description: OK
+    get:
+      responses:
+        '200':
+          description: OK
+    put:
+      responses:
+        '200':
+          description: OK
+    delete:
+      responses:
+        '200':
+          description: OK
+
+  /datasets/{datasetId}/status:
+    get:
+      responses:
+        '200':
+          description: OK
+
+  # =============================================
+  # METHOD ROUTES
+  # =============================================
+
+  /datasets/{datasetId}/methods:
+    get:
+      responses:
+        '200':
+          description: OK
+    post:
+      responses:
+        '200':
+          description: OK
+
+  /datasets/{datasetId}/methods/{methodId}:
+    get:
+      responses:
+        '200':
+          description: OK
+    put:
+      responses:
+        '200':
+          description: OK
+    delete:
+      responses:
+        '200':
+          description: OK
+
+  /datasets/{datasetId}/methods/{methodId}/status:
+    get:
+      responses:
+        '200':
+          description: OK
+
+  # =============================================
+  # SUBSET ROUTES
+  # =============================================
+
+  /datasets/{datasetId}/subsets:
+    get:
+      responses:
+        '200':
+          description: OK
+    post:
+      responses:
+        '200':
+          description: OK
+
+  /datasets/{datasetId}/subsets/{subsetId}:
+    get:
+      responses:
+        '200':
+          description: OK
+    put:
+      responses:
+        '200':
+          description: OK
+    delete:
+      responses:
+        '200':
+          description: OK
+
+  /datasets/{datasetId}/subsets/{subsetId}/download:
+    get:
+      responses:
+        '200':
+          description: OK
+
+  # =============================================
+  # DOCUMENT ROUTES
+  # =============================================
+
+  /datasets/{datasetId}/documents:
+    get:
+      responses:
+        '200':
+          description: OK
+
+  /datasets/{datasetId}/documents/{documentId}:
+    get:
+      responses:
+        '200':
+          description: OK
+    put:
+      responses:
+        '200':
+          description: OK
