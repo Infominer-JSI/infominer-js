@@ -4,6 +4,46 @@ info:
   version: '0.1'
 servers:
   - url: http://infominer.ijs.si/api/v1/
+
+tags:
+  - name: Dataset
+    description: "
+      The API for creating, retrieving, and modifying datasets.
+    "
+  - name: Method
+    description: "
+      The API for executing, updating, and retrieving method records.
+    "
+  - name: Subset
+    description: "
+      The API for creating, updating, and retrieving subset records.
+    "
+  - name: Document
+    description: "
+      The API for retrieving, and updating documents records.
+    "
+  - name: DatasetModel
+    x-displayName: The Dataset Model
+    description: |
+      <SchemaDefinition schemaRef="#/components/schemas/Dataset" />
+
+  - name: SubsetModel
+    x-displayName: The Subset Model
+    description: |
+      <SchemaDefinition schemaRef="#/components/schemas/Subset" />
+
+x-tagGroups:
+  - name: General
+    tags:
+      - Dataset
+      - Method
+      - Subset
+      - Document
+  - name: Models
+    tags:
+      - DatasetModel
+      - SubsetModel
+
 paths:
 
   # =============================================
@@ -12,6 +52,8 @@ paths:
 
   /datasets:
     get:
+      tags:
+        - Dataset
       summary: "Get all datasets"
       description: "Gets all of the owner datasets."
       responses:
@@ -23,11 +65,13 @@ paths:
                 type: object
                 properties:
                   datasets:
-                    description: "The array of datasets."
                     type: array
                     items:
                       $ref: "#/components/schemas/Dataset"
+                    description: "The array of datasets."
     post:
+      tags:
+        - Dataset
       summary: "Upload a dataset file"
       description: "
         Uploads a dataset file (.csv) with with the following structure: \n
@@ -41,15 +85,16 @@ paths:
         "
       requestBody:
         content:
-          'multipart/form-data':
+          multipart/form-data:
             schema:
               properties:
                 file:
-                  description: "The dataset file."
                   type: string
                   format: binary
+                  description: "The dataset file."
               required:
               - file
+
       responses:
         '200':
           description: OK
@@ -65,16 +110,31 @@ paths:
                 $ref: "#/components/schemas/BadRequest"
 
   /datasets/{datasetId}:
+    parameters:
+      - in: path
+        name: datasetId
+        schema:
+          type: integer
+          minimum: 1
+        required: true
+        description: "The dataset ID."
     post:
+      tags:
+        - Dataset
       summary: "Create a dataset"
       description: "Uploads the file metadata to create a new dataset."
+
       parameters:
         - in: path
           name: datasetId
           schema:
             type: integer
+            minimum: 1
           required: true
-          description: "The dataset ID provided by the **\"Upload a dataset file\"** route."
+          description: "
+            The dataset ID provided by the [\"Upload a dataset file\"](#/paths/~1datasets/post)
+            route.
+          "
       requestBody:
         content:
           application/json:
@@ -103,126 +163,327 @@ paths:
                         "
 
     get:
+      tags:
+        - Dataset
       summary: "Get the dataset"
+      description: "
+        Gets the dataset metadata as well as all subset and methods metadata that are currently
+        in the dataset analysis.
+      "
       responses:
         '200':
           description: OK
     put:
+      tags:
+        - Dataset
       summary: "Update the dataset"
       responses:
         '200':
           description: OK
     delete:
+      tags:
+        - Dataset
       summary: "Delete the dataset"
       responses:
         '200':
           description: OK
 
   /datasets/{datasetId}/status:
+    parameters:
+      - in: path
+        name: datasetId
+        schema:
+          type: integer
+          minimum: 1
+        required: true
+        description: "The dataset ID."
     get:
+      tags:
+        - Dataset
       summary: "Check the dataset upload status"
+      description: "Checks and gets all of the dataset metadata, including its status."
+
       responses:
         '200':
           description: OK
+
 
   # =============================================
   # METHOD ROUTES
   # =============================================
 
   /datasets/{datasetId}/methods:
+    parameters:
+      - in: path
+        name: datasetId
+        schema:
+          type: integer
+          minimum: 1
+        required: true
+        description: "The dataset ID."
     get:
+      tags:
+        - Method
       summary: "Get all methods"
       responses:
         '200':
           description: OK
+
     post:
+      tags:
+        - Method
       summary: "Execute a method"
       responses:
         '200':
           description: OK
 
   /datasets/{datasetId}/methods/{methodId}:
+    parameters:
+      - in: path
+        name: datasetId
+        schema:
+          type: integer
+          minimum: 1
+        required: true
+        description: "The dataset ID."
+      - in: path
+        name: methodId
+        schema:
+          type: integer
+          minimum: 0
+        required: true
+        description: "The method ID."
+
     get:
+      tags:
+        - Method
       summary: "Get the method"
       responses:
         '200':
           description: OK
+
     put:
+      tags:
+        - Method
       summary: "Update the method"
       responses:
         '200':
           description: OK
+
     delete:
+      tags:
+        - Method
       summary: "Delete the method"
       responses:
         '200':
           description: OK
 
   /datasets/{datasetId}/methods/{methodId}/status:
+    parameters:
+      - in: path
+        name: datasetId
+        schema:
+          type: integer
+          minimum: 1
+        required: true
+        description: "The dataset ID."
+      - in: path
+        name: methodId
+        schema:
+          type: integer
+          minimum: 0
+        required: true
+        description: "The method ID."
+
     get:
+      tags:
+        - Method
       summary: "Check the method creation status"
+
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dataset"
 
   # =============================================
   # SUBSET ROUTES
   # =============================================
 
   /datasets/{datasetId}/subsets:
+    parameters:
+      - in: path
+        name: datasetId
+        schema:
+          type: integer
+          minimum: 1
+        required: true
+        description: "The dataset ID."
+
     get:
+      tags:
+        - Subset
       summary: "Get all subsets"
+      description: "
+        Gets all subsets that were generated but not deleted during the dataset
+        analysis.
+      "
+
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subsets:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Subset"
+                    description: "The array of subsets."
+
     post:
+      tags:
+        - Subset
       summary: "Create a subset"
+      parameters:
+        - in: path
+          name: datasetId
+          schema:
+            type: integer
+            minimum: 1
+          required: true
+          description: "The dataset ID."
       responses:
         '200':
           description: OK
 
   /datasets/{datasetId}/subsets/{subsetId}:
+    parameters:
+      - in: path
+        name: datasetId
+        schema:
+          type: integer
+          minimum: 1
+        required: true
+        description: "The dataset ID."
+      - in: path
+        name: subsetId
+        schema:
+          type: integer
+          minimum: 0
+        required: true
+        description: "The subset ID."
     get:
+      tags:
+        - Subset
       summary: "Get a subset"
       responses:
         '200':
           description: OK
+
     put:
+      tags:
+        - Subset
       summary: "Update a subset"
       responses:
         '200':
           description: OK
+
     delete:
+      tags:
+        - Subset
       summary: "Delete a subset"
       responses:
         '200':
           description: OK
 
   /datasets/{datasetId}/subsets/{subsetId}/download:
+    parameters:
+        - in: path
+          name: datasetId
+          schema:
+            type: integer
+            minimum: 1
+          required: true
+          description: "The dataset ID."
+        - in: path
+          name: subsetId
+          schema:
+            type: integer
+            minimum: 0
+          required: true
+          description: "The subset ID."
     get:
+      tags:
+        - Subset
       summary: "Download a subset"
       responses:
         '200':
           description: OK
+          content:
+            multipart/form-data:
+              schema:
+                type: string
+                format: binary
+                description: "
+                  The file containing the subset documents in a csv format. Can be
+                  again uploaded via [\"Upload a dataset file\"](#/paths/~1datasets/post)
+                  route.
+                "
 
   # =============================================
   # DOCUMENT ROUTES
   # =============================================
 
   /datasets/{datasetId}/documents:
+    parameters:
+        - in: path
+          name: datasetId
+          schema:
+            type: integer
+            minimum: 1
+          required: true
+          description: "The dataset ID."
     get:
+      tags:
+        - Document
       summary: "Get some documents"
+
       responses:
         '200':
           description: OK
 
   /datasets/{datasetId}/documents/{documentId}:
+    parameters:
+        - in: path
+          name: datasetId
+          schema:
+            type: integer
+            minimum: 1
+          required: true
+          description: "The dataset ID."
+        - in: path
+          name: documentId
+          schema:
+            type: integer
+            minimum: 0
+          required: true
+          description: "The document ID."
     get:
+      tags:
+        - Document
       summary: "Get a document"
       responses:
         '200':
           description: OK
+
     put:
+      tags:
+        - Document
       summary: "Update a document"
       responses:
         '200':
@@ -304,40 +565,50 @@ components:
           properties:
             id:
               type: integer
-              description: "The dataset ID."
               minimum: 1
               example: 10
+              description: "The dataset ID."
+
             filename:
               type: string
-              description: "The uploaded file name."
               example: "secret-file.csv"
+              description: "The uploaded file name."
+
             delimiter:
               type: string
-              description: "The identified delimiter."
               example: ";"
+              description: "The identified delimiter."
+
             fields:
               type: array
-              description: "The identified fields in the file."
               items:
                 $ref: "#/components/schemas/Field"
+              description: "The identified fields in the file."
+
             metadata:
               type: object
               description: "The metadata available for selection."
               properties:
                 types:
                   type: array
-                  description: "Possible field types."
                   items:
                     type: string
                     enum: ["number", "text", "class", "category", "datetime"]
                   example: ["number", "text", "class", "category", "datetime"]
+                  description: "Possible field types."
                 stopwords:
                   type: object
                   description: "The stopwords metadata."
                   properties:
                     languages:
                       type: array
-                      description: "The array of all infominer supported stopwords."
+                      example: [
+                        { label: "English", value: "en" },
+                        { label: "German", value: "de" },
+                        { label: "Slovene", value: "si" },
+                        { label: "Spanish", value: "es" },
+                        { label: "None", value: "none" },
+                      ]
                       items:
                         type: object
                         properties:
@@ -346,16 +617,10 @@ components:
                             description: "The full name of the language."
                           value:
                             type: string
-                            description: "The language value."
                             minLength: 2
                             maxLength: 2
-                      example: [
-                        { label: "English", value: "en" },
-                        { label: "German", value: "de" },
-                        { label: "Slovene", value: "si" },
-                        { label: "Spanish", value: "es" },
-                        { label: "None", value: "none" },
-                      ]
+                            description: "The language value."
+                      description: "The array of all infominer supported stopwords."
 
     FileMetadatUpload:
       type: object
@@ -366,45 +631,51 @@ components:
           properties:
             name:
               type: string
-              description: "The dataset name."
               example: "Top Secret"
+              description: "The dataset name."
+
             description:
               type: string
-              description: "The dataset description."
               nullable: true
               example: "This dataset contains top secret information."
+              description: "The dataset description."
+
             parameters:
               type: object
               description: "The parameters used across the whole dataset analysis."
               properties:
                 stopwords:
                   type: object
-                  description: "The stopwords configuration."
                   nullable: true
+                  description: "The stopwords configuration."
+
                   properties:
                     language:
                       type: string
                       minLength: 2
                       maxLength: 2
                       nullable: true
+                      example: "en"
                       description: "
                         The language value. This should be one of the language
                         values in the **dataset.metadata.stopwords.languages**
-                        attribute of the **\"Upload a dataset file\"** route.
+                        attribute of the [\"Upload a dataset file\"](#/paths/~1datasets/post)
+                        route.
                       "
-                      example: "en"
+
                     words:
                       type: array
                       nullable: true
                       items:
                         type: string
-                      description: "The array of specific stopwords to ignore."
                       example: ["top", "secret"]
+                      description: "The array of specific stopwords to ignore."
+
             fields:
               type: array
               description: "
                 The selected fields metadata. Each item of the array corresponds
-                to one of the fields returned by the **\"Upload a dataset file\"**
+                to one of the fields returned by the [\"Upload a dataset file\"](#/paths/~1datasets/post)
                 route.
                 "
               items:
@@ -417,9 +688,9 @@ components:
                         description: "
                         The selected field. There is some structure of what a
                         fields type can be based on its suggested type from
-                        the **\"Upload a dataset file\"** route. The type can
-                        be anything that is equal to or lower to the recommended
-                        type on the following list:
+                        the [\"Upload a dataset file\"](#/paths/~1datasets/post)
+                        route. The type can be anything that is equal to or lower
+                        to the recommended type on the following list:
 
                         - number
 
@@ -437,8 +708,8 @@ components:
                         **text** types.
 
                         **Suggestion:** Set the field type to the suggested ones
-                        provided by the **\"Upload a dataset file\"** route.
-
+                        provided by the [\"Upload a dataset file\"](#/paths/~1datasets/post)
+                        route.
                         "
                   - $ref: "#/components/schemas/Field"
                   - required:
@@ -459,20 +730,23 @@ components:
       properties:
         name:
           type: string
-          description: "The field name."
           example: "field"
+          description: "The field name."
+
         type:
           type: string
           enum: ["number", "text", "class", "category", "datetime"]
-          description: "The field type."
           example: "text"
+          description: "The field type."
+
         included:
           type: boolean
+          default: true
           description: "
             True, if the field should be included into the dataset analysis.
             Otherwise, False.
             "
-          default: true
+
 
     # =============================================
     # DATASET SCHEMAS
@@ -481,57 +755,148 @@ components:
     Dataset:
       type: object
       properties:
-        type:
-          type: string
-          description: "The dataset type."
-          default: "dataset"
         id:
           type: integer
-          description: "The dataset ID."
           minimum: 1
+          description: "The dataset ID."
+
+        type:
+          type: string
+          default: "dataset"
+          description: "The dataset type."
+
         name:
           type: string
-          description: "The dataset name."
           example: "Secret Data"
+          description: "The dataset name."
+
         description:
           type: string
           nullable: true
-          description: "The dataset description."
           example: "The dataset containing the secret information."
+          description: "The dataset description."
+
         nDocuments:
           type: integer
-          description: "The number of documents in the dataset."
+          nullable: true
           example: 42000
+          default: null
+          description: "The number of documents in the dataset."
+
         created:
-          oneOf:
-            - type: string
-              format: date-time
-            - type: string
-              format: date
-          description: "The dataset creation date."
+          type: string
+          format: date-time
           example: "2021-01-19"
+          description: "The dataset creation date."
+
         status:
           type: string
           enum: ["IN_QUEUE", "LOADING", "FINISHED", "ERROR"]
-          description: "The status of the dataset creation."
           example: "FINISHED"
+          default: "IN_QUEUE"
+          description: "The status of the dataset creation."
+
         group:
           type: string
-          description: "In which group the dataset belongs to."
           nullable: true
-          example: null
+          default: null
+          description: "In which group the dataset belongs to."
+
         order:
           type: integer
-          description: "The order of the dataset in the group."
           nullable: true
-          example: null
+          default: null
+          description: "The order of the dataset in the group."
 
     # =============================================
     # SUBSET SCHEMAS
     # =============================================
+
+    Subset:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 4
+          description: "The subset ID."
+
+        type:
+          type: string
+          default: "subset"
+          description: "The subset type."
+
+        label:
+          type: string
+          example: "Secret Subset"
+          description: "The subset label."
+
+        description:
+          type: string
+          nullable: true
+          example: null
+          description: "The subset description."
+
+        resultedIn:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+          example: 3
+          description: "
+            The method ID that generated the subset. If the subset the \"root\"
+            subset, this value will be `null`.
+          "
+
+        usedBy:
+          type: array
+          items:
+            type: integer
+            format: int32
+            minimum: 0
+          example: [4, 5, 6]
+          description: "The array of method IDs that used the subset in the analysis."
+
+        nDocuments:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 1300
+          description: "The number of documents in the subset."
+
+        modified:
+          type: boolean
+          default: false
+          description: "
+            True, if the subset was modified since it was first created. Otherwise, False.
+          "
+        metadata:
+          type: object
+          nullable: true
+          example: null
+          description: "Additional subset metadata."
 
 
 
     # =============================================
     # METHOD SCHEMAS
     # =============================================
+
+    MethodBase:
+      type: object
+      properties:
+        produced:
+          type: array
+          nullable: true
+          items:
+            type: integer
+            format: int32
+          minItems: 1
+          example: [3, 4]
+          description: "The array of subset IDs the method generated."
+        appliedOn:
+          type: integer
+          format: int32
+
+
