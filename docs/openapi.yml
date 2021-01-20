@@ -32,6 +32,11 @@ tags:
     description: |
       <SchemaDefinition schemaRef="#/components/schemas/Subset" />
 
+  - name: MethodModel
+    x-displayName: The Method Model
+    description: |
+      <SchemaDefinition schemaRef="#/components/schemas/Method" />
+
 x-tagGroups:
   - name: General
     tags:
@@ -43,6 +48,7 @@ x-tagGroups:
     tags:
       - DatasetModel
       - SubsetModel
+      - MethodModel
 
 paths:
 
@@ -67,8 +73,9 @@ paths:
                   datasets:
                     type: array
                     items:
-                      $ref: "#/components/schemas/Dataset"
+                      $ref: "#/components/schemas/DatasetDB"
                     description: "The array of datasets."
+
     post:
       tags:
         - Dataset
@@ -148,20 +155,24 @@ paths:
               schema:
                 type: object
                 properties:
-                  dataset:
+                  datasets:
                     type: object
                     description: "The dataset metadata."
                     properties:
                       id:
                         type: integer
-                        format: int32
                         minimum: 1
                         description: "
                           The dataset ID. Used to check the dataset status via the
                           [\"Check the dataset upload status\"](#/paths/~1datasets~1{datasetId}~1status/get)
                           route.
                         "
-
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
     get:
       tags:
         - Dataset
@@ -173,20 +184,115 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  datasets:
+                    allOf:
+                      - $ref: "#/components/schemas/Dataset"
+                      - description: "The dataset metadata."
+                  subsets:
+                    type: array
+                    minItems: 1
+                    items:
+                      $ref: "#/components/schemas/Subset"
+                    description: "The array of subsets."
+                  methods:
+                    type: array
+                    minItems: 1
+                    items:
+                      $ref: "#/components/schemas/Method"
+                    description: "The array of methods."
+
+
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
     put:
       tags:
         - Dataset
       summary: "Update the dataset"
+      description: "Updates the dataset metadata with the provided values."
+      requestBody:
+        content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    nullable: true
+                    example: "Not a Secret Dataset"
+                    description: "The new dataset name."
+                  description:
+                    type: string
+                    nullable: true
+                    example: "This is certainly not a secret dataset."
+                    description: "The new dataset description."
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  datasets:
+                    description: "The updated dataset metadata."
+                    allOf:
+                      - $ref: "#/components/schemas/Dataset"
+                      - type: object
+                        properties:
+                          name:
+                            example: "Not a Secret Dataset"
+                          description:
+                            example: "This is certainly not a secret dataset."
+
+
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
     delete:
       tags:
         - Dataset
       summary: "Delete the dataset"
+      description: "
+        Deletes the dataset and all of its associated analysis.
+        **NOTE:** This cannot be reverted.
+      "
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  datasets:
+                    type: object
+                    description: "The metadata of the deleted dataset."
+                    properties:
+                      id:
+                        type: integer
+                        nullable: false
+                        minimum: 1
+                        description: "The ID of the deleted dataset."
+                      isDeleted:
+                        type: boolean
+                        description: "True, if the dataset was deleted. Otherwise, False."
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
 
   /datasets/{datasetId}/status:
     parameters:
@@ -202,10 +308,25 @@ paths:
         - Dataset
       summary: "Check the dataset upload status"
       description: "Checks and gets all of the dataset metadata, including its status."
-
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  datasets:
+                    allOf:
+                      - description: "The dataset metadata."
+                      - $ref: "#/components/schemas/DatasetDB"
+
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
 
 
   # =============================================
@@ -225,17 +346,51 @@ paths:
       tags:
         - Method
       summary: "Get all methods"
+      description: "
+        Get all metadata of the methods that were used in the analysis of the
+        selected dataset.
+      "
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  methods:
+                    type: array
+                    minItems: 1
+                    nullable: false
+                    items:
+                      $ref: "#/components/schemas/Method"
+                    description: "
+                      The array of non-deleted methods used in the dataset analysis.
+                    "
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
 
     post:
       tags:
         - Method
       summary: "Execute a method"
+      description: "
+        Sends the parameters and execute the method. Some methods require
+        additional updates to finalize the methods training (e.g. active learning).
+      "
       responses:
         '200':
           description: OK
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
 
   /datasets/{datasetId}/methods/{methodId}:
     parameters:
@@ -258,25 +413,85 @@ paths:
       tags:
         - Method
       summary: "Get the method"
+      description: "Gets the method and the associated subsets metadata."
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  methods:
+                    allOf:
+                    - type: object
+                      description: "The method metadata."
+                    - $ref: "#/components/schemas/Method"
+                  subsets:
+                    type: array
+                    minItems: 1
+                    items:
+                      $ref: "#/components/schemas/Subset"
+                    description: "The subsets associated with the method."
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
 
     put:
       tags:
         - Method
       summary: "Update the method"
+      description: "
+        Updates the method with new metadata and required to finalize the training process.
+      "
       responses:
         '200':
           description: OK
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
 
     delete:
       tags:
         - Method
       summary: "Delete the method"
+      description: "
+        Deletes the method and any subsets it generated.
+        **NOTE:** This cannot be reverted.
+      "
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  methods:
+                    type: object
+                    description: "The metadata of the deleted method."
+                    properties:
+                      id:
+                        type: integer
+                        nullable: false
+                        minimum: 0
+                        description: "The ID of the deleted method."
+                      isDeleted:
+                        type: boolean
+                        description: "True, if the method was deleted. Otherwise, False."
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
+
 
   /datasets/{datasetId}/methods/{methodId}/status:
     parameters:
@@ -299,14 +514,21 @@ paths:
       tags:
         - Method
       summary: "Check the method creation status"
-
+      description: "Checks if the methods status of the training process."
+      deprecated: true
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Dataset"
+                $ref: "#/components/schemas/Method"
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
 
   # =============================================
   # SUBSET ROUTES
@@ -330,7 +552,6 @@ paths:
         Gets all subsets that were generated but not deleted during the dataset
         analysis.
       "
-
       responses:
         '200':
           description: OK
@@ -344,11 +565,19 @@ paths:
                     items:
                       $ref: "#/components/schemas/Subset"
                     description: "The array of subsets."
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
 
     post:
       tags:
         - Subset
       summary: "Create a subset"
+      description: "Creates a new subset using the provided metadata."
+      deprecated: true
       parameters:
         - in: path
           name: datasetId
@@ -360,6 +589,12 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
 
   /datasets/{datasetId}/subsets/{subsetId}:
     parameters:
@@ -381,25 +616,114 @@ paths:
       tags:
         - Subset
       summary: "Get a subset"
+      description: "Gets the subset and its associated methods metadata."
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subsets:
+                    allOf:
+                    - description: "The subset metadata."
+                    -  $ref: "#/components/schemas/Subset"
+                  methods:
+                    type: array
+                    minItems: 1
+                    items:
+                      $ref: "#/components/schemas/Method"
+                    description: "The methods associated with the subset."
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
 
     put:
       tags:
         - Subset
       summary: "Update a subset"
+      description: "Updates the subset with the provided metadata."
+      requestBody:
+        content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  label:
+                    type: string
+                    nullable: true
+                    example: "New Subset Label"
+                    description: "The new subset label."
+                  description:
+                    type: string
+                    nullable: true
+                    example: "This is the new subset description."
+                    description: "The new subset description."
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subsets:
+                    type: object
+                    description: "The updated subset metadata."
+                    allOf:
+                      - $ref: "#/components/schemas/Subset"
+                      - type: object
+                        properties:
+                          label:
+                            example: "New Subset Label"
+                          description:
+                            example: "This is the new subset description."
+
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
 
     delete:
       tags:
         - Subset
       summary: "Delete a subset"
+      description: "
+        Deletes the subset and the methods that used it.
+        **NOTE:** This cannot be reverted.
+      "
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subsets:
+                    type: object
+                    description: "The metadata of the deleted subset."
+                    properties:
+                      id:
+                        type: integer
+                        nullable: false
+                        minimum: 0
+                        description: "The ID of the subset method."
+                      isDeleted:
+                        type: boolean
+                        description: "True, if the subset was deleted. Otherwise, False."
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
 
   /datasets/{datasetId}/subsets/{subsetId}/download:
     parameters:
@@ -421,19 +745,33 @@ paths:
       tags:
         - Subset
       summary: "Download a subset"
+      description: "
+        Downloads a csv file containing the subset documents. The file can then be
+        again uploaded via the [\"Upload a dataset file\"](#/paths/~1datasets/post)
+        route.
+      "
       responses:
         '200':
           description: OK
           content:
             multipart/form-data:
               schema:
-                type: string
-                format: binary
-                description: "
-                  The file containing the subset documents in a csv format. Can be
-                  again uploaded via [\"Upload a dataset file\"](#/paths/~1datasets/post)
-                  route.
-                "
+                type: object
+                properties:
+                  file:
+                    type: string
+                    format: binary
+                    description: "
+                      The file containing the subset documents in a csv format. Can be
+                      again uploaded via [\"Upload a dataset file\"](#/paths/~1datasets/post)
+                      route.
+                    "
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
 
   # =============================================
   # DOCUMENT ROUTES
@@ -452,10 +790,18 @@ paths:
       tags:
         - Document
       summary: "Get some documents"
-
+      description: "
+        Gets an array of documents that match the provided query criteria.
+      "
       responses:
         '200':
           description: OK
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
 
   /datasets/{datasetId}/documents/{documentId}:
     parameters:
@@ -477,17 +823,34 @@ paths:
       tags:
         - Document
       summary: "Get a document"
+      description: "Gets the selected document."
       responses:
         '200':
           description: OK
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
 
     put:
       tags:
         - Document
       summary: "Update a document"
+      description: "
+        Updates the document with the provided metadata.
+      "
+      deprecated: true
       responses:
         '200':
           description: OK
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
 
 
 # =============================================
@@ -509,7 +872,6 @@ components:
           description: "The error message."
         code:
           type: integer
-          format: "int32"
           description: "The error status code."
 
     BadRequest:
@@ -631,7 +993,7 @@ components:
           properties:
             name:
               type: string
-              example: "Top Secret"
+              example: "Secret Dataset"
               description: "The dataset name."
 
             description:
@@ -645,31 +1007,17 @@ components:
               description: "The parameters used across the whole dataset analysis."
               properties:
                 stopwords:
-                  type: object
-                  nullable: true
-                  description: "The stopwords configuration."
-
-                  properties:
-                    language:
-                      type: string
-                      minLength: 2
-                      maxLength: 2
-                      nullable: true
-                      example: "en"
-                      description: "
-                        The language value. This should be one of the language
-                        values in the **dataset.metadata.stopwords.languages**
-                        attribute of the [\"Upload a dataset file\"](#/paths/~1datasets/post)
-                        route.
-                      "
-
-                    words:
-                      type: array
-                      nullable: true
-                      items:
-                        type: string
-                      example: ["top", "secret"]
-                      description: "The array of specific stopwords to ignore."
+                  allOf:
+                    - type: object
+                      properties:
+                        language:
+                          description: "
+                            The language value. This should be one of the language
+                            values in the **dataset.metadata.stopwords.languages**
+                            attribute of the [\"Upload a dataset file\"](#/paths/~1datasets/post)
+                            route.
+                          "
+                    - $ref: "#/components/schemas/HStopwords"
 
             fields:
               type: array
@@ -752,7 +1100,7 @@ components:
     # DATASET SCHEMAS
     # =============================================
 
-    Dataset:
+    DatasetBase:
       type: object
       properties:
         id:
@@ -767,13 +1115,13 @@ components:
 
         name:
           type: string
-          example: "Secret Data"
+          example: "Secret Dataset"
           description: "The dataset name."
 
         description:
           type: string
           nullable: true
-          example: "The dataset containing the secret information."
+          example: "This dataset contains top secret information."
           description: "The dataset description."
 
         nDocuments:
@@ -786,38 +1134,72 @@ components:
         created:
           type: string
           format: date-time
-          example: "2021-01-19"
+          example: "2021-01-19T12:31:00.071Z"
           description: "The dataset creation date."
 
-        status:
-          type: string
-          enum: ["IN_QUEUE", "LOADING", "FINISHED", "ERROR"]
-          example: "FINISHED"
-          default: "IN_QUEUE"
-          description: "The status of the dataset creation."
+    DatasetDB:
+      allOf:
+        - $ref: "#/components/schemas/DatasetBase"
+        - properties:
+            status:
+              type: string
+              enum: ["IN_QUEUE", "LOADING", "FINISHED", "ERROR"]
+              example: "FINISHED"
+              default: "IN_QUEUE"
+              description: "The status of the dataset creation."
 
-        group:
-          type: string
-          nullable: true
-          default: null
-          description: "In which group the dataset belongs to."
+            group:
+              type: string
+              nullable: true
+              default: null
+              description: "In which group the dataset belongs to."
 
-        order:
-          type: integer
-          nullable: true
-          default: null
-          description: "The order of the dataset in the group."
+            order:
+              type: integer
+              nullable: true
+              default: null
+              description: "The order of the dataset in the group."
+
+    Dataset:
+      title: "dataset"
+      allOf:
+        - $ref: "#/components/schemas/DatasetBase"
+        - properties:
+            fields:
+              type: array
+              minItems: 1
+              items:
+                type: object
+                description: "The field metadata."
+                properties:
+                  name:
+                    type: string
+                    nullable: false
+                    description: "The field name."
+                  type:
+                    type: string
+                    enum: ["string", "datetime", "string_v", "float"]
+                    description: "The data type of the field."
+                  group:
+                    type: string
+                    enum: ["number", "text", "class", "category", "datetime"]
+                    description: "
+                      The user defined group the field corresponds to.
+                    "
+
+              description: "The array of field metadata of the dataset."
+
 
     # =============================================
     # SUBSET SCHEMAS
     # =============================================
 
     Subset:
+      title: "subset"
       type: object
       properties:
         id:
           type: integer
-          format: int32
           minimum: 0
           example: 4
           description: "The subset ID."
@@ -840,7 +1222,6 @@ components:
 
         resultedIn:
           type: integer
-          format: int32
           minimum: 0
           nullable: true
           example: 3
@@ -853,14 +1234,12 @@ components:
           type: array
           items:
             type: integer
-            format: int32
             minimum: 0
           example: [4, 5, 6]
           description: "The array of method IDs that used the subset in the analysis."
 
         nDocuments:
           type: integer
-          format: int32
           minimum: 0
           example: 1300
           description: "The number of documents in the subset."
@@ -886,17 +1265,676 @@ components:
     MethodBase:
       type: object
       properties:
+        id:
+          type: integer
+          minimum: 0
+          description: "The method ID."
+          example: 1
+        type:
+          type: string
+          default: "method"
+          description: "The method type."
+        method:
+          type: string
+          description: "The method algorithm."
+        status:
+          type: string
+          enum: ["IN_QUEUE", "TRAINING", "FINISHED", "ERROR"]
+          default: "IN_QUEUE"
+          description: "The method process status."
+        appliedOn:
+          type: integer
+          example: 3
+          description: "The subset ID the method was applied on."
         produced:
           type: array
           nullable: true
           items:
             type: integer
-            format: int32
           minItems: 1
-          example: [3, 4]
           description: "The array of subset IDs the method generated."
-        appliedOn:
-          type: integer
-          format: int32
+        parameters:
+          type: object
+          description: "The method parameters."
+        result:
+          type: object
+          description: "The method result."
+        modified:
+          type: boolean
+          description: "
+            True, if the method was modified since it was finished. Otherwise, False.
+          "
 
+    AggregatesSubset:
+      title: "aggregates.subset"
+      allOf:
+      - $ref: "#/components/schemas/MethodBase"
+      - type: object
+        properties:
+          method:
+            default: "aggregates.subset"
+          produced:
+            example: [6]
+          parameters:
+            properties:
+              subsetId:
+                type: integer
+                example: 3
+                description: "The subset ID the method was applied on."
+              processing:
+                $ref: "#/components/schemas/HProcessing"
+          result:
+            properties:
+              aggregates:
+                type: array
+                description: "
+                  The array of aggregates (statistics) for each of the document field.
+                "
+                items:
+                  anyOf:
+                    - $ref: "#/components/schemas/AggrCount"
+                    - $ref: "#/components/schemas/AggrKeyword"
+                    - $ref: "#/components/schemas/AggrTimeline"
+                    - $ref: "#/components/schemas/AggrHierarchy"
+                    - $ref: "#/components/schemas/AggrHistogram"
+
+    ClusteringKMeans:
+      title: "clustering.kmeans"
+      allOf:
+      - $ref: "#/components/schemas/MethodBase"
+      - type: object
+        properties:
+          method:
+            default: "clustering.kmeans"
+          produced:
+            example: [7, 8, 9]
+          parameters:
+            properties:
+              subsetId:
+                type: integer
+                example: 3
+                description: "The subset ID the method was applied on."
+              fields:
+                type: array
+                items:
+                  type: string
+                minItems: 1
+                example: ["field"]
+                description: "
+                  The array of field names used to perform the clustering on.
+                "
+              processing:
+                $ref: "#/components/schemas/HProcessing"
+              method:
+                type: object
+                description: "The algorithm parameters."
+                properties:
+                  clusteringType:
+                    type: string
+                    enum: ["text", "number"]
+                    example: "text"
+                    description: "
+                      The clustering type. It can cluster by either numbers or text fields.
+                    "
+                  k:
+                    type: number
+                    minimum: 2
+                    example: 2
+                    description: "
+                      The number of clusters to be generated.
+                    "
+          result:
+            properties:
+              clusters:
+                type: array
+                description: "
+                  The array of cluster metadata.
+                "
+                items:
+                  type: object
+                  properties:
+                    subsetId:
+                      type: integer
+                      minimum: 0
+                      nullable: true
+                      description: "
+                        The ID of the subset that contains the clusters documents.
+                      "
+                    distances:
+                      type: object
+                      description: "The cluster distances/statistics."
+                      properties:
+                        mean:
+                          type: number
+                          description: "
+                            The mean of distances between the documents and the cluster centroid.
+                          "
+                        std:
+                          type: number
+                          description: "
+                            The standard deviation average of distances between the documents and the cluster centroid.
+                          "
+                        min:
+                          type: number
+                          description: "
+                            The minimum distance between the documents and the cluster centroid.
+                          "
+                        max:
+                          type: number
+                          description: "
+                            The maximum distance between the documents and the cluster centroid.
+                          "
+              empty:
+                type: object
+                nullable: true
+                description: "
+                  The cluster containing the metadata of the documents that could not be used
+                  in the clustering algorithm, i.e. had a zero vector representation.
+                "
+                properties:
+                  subsetId:
+                    type: integer
+                    minimum: 0
+                    description: "
+                      The subset ID containing the documents that were not used in the clustering algorithm.
+                    "
+
+    ActiveLearning:
+      title: "classifier.active_learning"
+      allOf:
+      - $ref: "#/components/schemas/MethodBase"
+      - type: object
+        properties:
+          method:
+            default: "classifier.active_learning"
+          produced:
+            example: [10, 11]
+          parameters:
+            properties:
+              subsetId:
+                type: integer
+                example: 3
+                description: "The subset ID the method was applied on."
+              fields:
+                type: array
+                items:
+                  type: string
+                minItems: 1
+                example: ["field"]
+                description: "
+                  The array of field names used in active learning.
+                "
+              processing:
+                $ref: "#/components/schemas/HProcessing"
+              method:
+                type: object
+                description: "The algorithm parameters."
+                properties:
+                  query:
+                    type: string
+                    example: "Lets try and find TOP SECRET documents"
+                    description: "
+                      The source query text used to initalize the active learning. This text
+                      will be used to find the positive and negative document examples
+                      used to initialize the active learning classifier.
+                    "
+                  documents:
+                    type: array
+                    description: "
+                      The array of document IDs and their labels.
+                    "
+                    items:
+                      type: object
+                      description: "The document labels."
+                      properties:
+                        documentId:
+                          type: integer
+                          minimum: 0
+                          description: "The document ID."
+                        label:
+                          type: integer
+                          enum: [-1, 1]
+                          description: "The negative (-1) or positive (1) label of the document."
+                  next:
+                    type: object
+                    description: "
+                      The next document selected to be labelled by the user.
+                    "
+                    properties:
+                      documentId:
+                        type: integer
+                        minimum: 0
+                        description: "The document ID."
+                      label:
+                        type: integer
+                        enum: [-1, 1]
+                        nullable: true
+                        default: null
+                        description: "The negative (-1) or positive (1) label of the document."
+
+          result:
+            properties:
+              labelCount:
+                type: object
+                description: "
+                  The count of positive and negative documents the user labelled.
+                "
+                properties:
+                  positive:
+                    type: integer
+                    minimum: 0
+                    example: 4
+                    description: "
+                      The number of positive labelled documents.
+                    "
+                  negative:
+                    type: integer
+                    minimum: 0
+                    example: 3
+                    description: "
+                      The number of negative labelled documents.
+                    "
+              positive:
+                type: object
+                description: "The metadata associated with the positive document examples."
+                properties:
+                  subsetId:
+                    type: integer
+                    minimum: 0
+                    example: 10
+                    description: "
+                      The ID of the subset containing the positive document examples.
+                    "
+                  features:
+                    type: array
+                    minItems: 1
+                    description: "The top 100 features that decided if a document was positive."
+                    items:
+                        type: object
+                        description: "
+                          The most positive weighted features.
+                        "
+                        properties:
+                          feature:
+                            type: string
+                            description: "The feature name."
+                          weight:
+                            type: number
+                            description: "The feature weight."
+              negative:
+                type: object
+                description: "The metadata associated with the negative document examples."
+                properties:
+                  subsetId:
+                    type: integer
+                    minimum: 0
+                    example: 11
+                    description: "
+                      The ID of the subset containing the negative document examples.
+                    "
+                  features:
+                    type: array
+                    minItems: 1
+                    description: "The top 100 features that decided if a document was negative."
+                    items:
+                        type: object
+                        description: "
+                          The most negative weighted features.
+                        "
+                        properties:
+                          feature:
+                            type: string
+                            description: "The feature name."
+                          weight:
+                            type: number
+                            description: "The feature weight."
+
+
+    Method:
+      title: "method"
+      type: object
+      anyOf:
+        - $ref: "#/components/schemas/AggregatesSubset"
+        - $ref: "#/components/schemas/ClusteringKMeans"
+        - $ref: "#/components/schemas/ActiveLearning"
+
+
+    # =============================================
+    # HELPER SCHEMAS
+    # =============================================
+
+    HStopwords:
+      title: "stopwords"
+      type: object
+      nullable: true
+      description: "The stopwords configuration."
+
+      properties:
+        language:
+          type: string
+          minLength: 2
+          maxLength: 2
+          nullable: true
+          example: "en"
+          description: "The language value."
+
+        words:
+          type: array
+          nullable: true
+          items:
+            type: string
+          example: ["top", "secret"]
+          description: "The array of specific stopwords to ignore."
+
+
+    HProcessing:
+      title: "processing"
+      type: object
+      description: "
+        The processing parameters used to generate the features and execute the method.
+      "
+      properties:
+        stopwords:
+          $ref: "#/components/schemas/HStopwords"
+
+
+    AggrBasic:
+      type: object
+      properties:
+        field:
+          type: string
+          nullable: false
+          example: "label"
+          description: "The field name."
+        type:
+          type: string
+          nullable: false
+          description: "The aggregate type."
+        statistics:
+          type: object
+          nullable: false
+          description: "The aggregate statistics."
+
+    AggrCount:
+      title: "count"
+      allOf:
+        - $ref: "#/components/schemas/AggrBasic"
+        - description: "The count statistics generated out of `class` field types."
+          properties:
+            type:
+              default: "count"
+            statistics:
+              properties:
+                values:
+                  type: array
+                  nullable: false
+                  minItems: 1
+                  items:
+                    type: object
+                    description: "The value statistics."
+                    properties:
+                      value:
+                        type: string
+                        nullable: false
+                        example: "Ljubljana"
+                        description: "The field value."
+                      frequency:
+                        type: integer
+                        nullable: false
+                        example: 1100
+                        description: "The number of times this value appeared."
+                      precent:
+                        type: number
+                        nullable: false
+                        example: 91.2
+                        description: "
+                          The percentage of the value occuring in the set.
+                        "
+                  description: "The array of count statistics."
+
+    AggrKeyword:
+      title: "keyword"
+      allOf:
+        - $ref: "#/components/schemas/AggrBasic"
+        - description: "The keyword statistics generated out of `text` field types."
+          properties:
+            type:
+              default: "keywords"
+            statistics:
+              properties:
+                values:
+                  type: array
+                  nullable: false
+                  minItems: 1
+                  items:
+                    type: object
+                    description: "The value statistics."
+                    properties:
+                      keyword:
+                        type: string
+                        nullable: true
+                        example: "ljubljana"
+                        description: "The keyword value. The keywords are all lower-cased."
+                      weight:
+                        type: number
+                        nullable: false
+                        example: 0.91
+                        description: "
+                          The weight representing the importance/presence of the keyword
+                          in the set. Higher weight means greater importance.
+                        "
+                  description: "The array of keyword statistics."
+
+    AggrTimeline:
+      title: "timeline"
+      allOf:
+        - $ref: "#/components/schemas/AggrBasic"
+        - description: "The timeline statistics generated out of `datetime` field types."
+          properties:
+            type:
+              default: "timeline"
+            statistics:
+              properties:
+                month:
+                  type: array
+                  nullable: false
+                  minItems: 1
+                  items:
+                    $ref: "#/components/schemas/TimelineItem"
+                  description: "
+                    The array of month statistics.
+                    The item interval value is the `month`.
+                  "
+                day-of-week:
+                  type: array
+                  nullable: false
+                  minItems: 1
+                  items:
+                    $ref: "#/components/schemas/TimelineItem"
+                  description: "
+                    The array of day-of-week statistics.
+                    The item interval value is the `day`.
+                  "
+                hour-of-day:
+                  type: array
+                  nullable: false
+                  minItems: 1
+                  items:
+                    $ref: "#/components/schemas/TimelineItem"
+                  description: "
+                    The array of day-of-week statistics.
+                    The item interval value is the `hour` (0-23).
+                  "
+                date:
+                  type: array
+                  nullable: false
+                  minItems: 1
+                  items:
+                    $ref: "#/components/schemas/TimelineItem"
+                  description: "
+                    The array of date statistics.
+                    The item interval value is the `date`.
+                  "
+
+    AggrHierarchy:
+      title: "hierarchy"
+      allOf:
+        - $ref: "#/components/schemas/AggrBasic"
+        - description: "The hierarchy statistics generated out of `category` field types."
+          properties:
+            type:
+              default: "hierarchy"
+            statistics:
+              properties:
+                values:
+                  type: array
+                  nullable: false
+                  minItems: 1
+                  items:
+                    $ref: "#/components/schemas/HierarchyItem"
+                  description: "The array of keyword statistics."
+
+    AggrHistogram:
+      title: "histogram"
+      allOf:
+        - $ref: "#/components/schemas/AggrBasic"
+        - description: "The histogram statistics generated out of `number` field types."
+          properties:
+            type:
+              default: "histogram"
+            statistics:
+              properties:
+                count:
+                  type: number
+                  minimum: 0
+                  example: 142003
+                  description: "The total number of values used for these statistics."
+                min:
+                  type: number
+                  example: -30.2
+                  description: "The minimum value."
+                max:
+                  type: number
+                  example: 176.8
+                  description: "The maximum value."
+                sum:
+                  type: number
+                  example: 1549001
+                  description: "The sum of all values."
+                mean:
+                  type: number
+                  example: 10
+                  description: "The mean of the values."
+                stdev:
+                  type: number
+                  example: 10
+                  description: "The standard deviation of the values."
+                median:
+                  type: number
+                  example: 42
+                  description: "The median of the values."
+                values:
+                  type: array
+                  nullable: false
+                  minItems: 0
+                  items:
+                    $ref: "#/components/schemas/HistogramItem"
+                  description: "The array of histogram bin statistics."
+
+    TimelineItem:
+      title: "item"
+      type: object
+      description: "The value statistics."
+      properties:
+        interval:
+          type: string
+          nullable: true
+          description: "The timeline item name."
+        frequency:
+          type: integer
+          nullable: false
+          example: 1100
+          description: "The number of times this value appeared."
+        precent:
+          type: number
+          nullable: false
+          example: 91.2
+          description: "
+            The percentage of the value occuring in the set.
+          "
+
+    HierarchyItem:
+      title: "item"
+      type: object
+      description: "The hierarchy item."
+      properties:
+        value:
+          type: string
+          nullable: false
+          example: "root"
+          description: "The item value."
+        frequency:
+          type: integer
+          nullable: false
+          example: 1100
+          description: "
+            The number of times this value appeared in the herarchy branch.
+          "
+        precent:
+          type: number
+          nullable: false
+          example: 91.2
+          description: "
+            The percentage of the value occuring in the set.
+          "
+        descendents:
+          type: array
+          minItems: 0
+          items:
+            $ref: "#/components/schemas/HierarchyItem"
+          description: "
+            The items descendents.
+            If there are no descendents then this is the last one of the branch.
+          "
+
+    HistogramItem:
+      title: "item"
+      type: object
+      description: "The histogram bin."
+      properties:
+        min:
+          type: number
+          nullable: false
+          example: 0.1
+          description: "
+            The minimum value of the bin.
+          "
+        max:
+          type: number
+          nullable: false
+          example: 10
+          description: "
+            The maximum value of the bin.
+          "
+        frequency:
+          type: number
+          nullable: false
+          example: 1403
+          description: "
+            The number of document values that fall into this bin.
+          "
+        precent:
+          type: number
+          nullable: false
+          example: 40.12
+          description: "
+            The percent of document values that fall into this bin.
+          "
+        precentSum:
+          type: number
+          nullable: false
+          example: 40.12
+          description: "
+            The cumulative percentage sum.
+          "
 
