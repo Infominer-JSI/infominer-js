@@ -1,7 +1,7 @@
 openapi: '3.0.2'
 info:
   title: Infominer API
-  version: '0.1'
+  version: '0.8'
 servers:
   - url: http://infominer.ijs.si/api/v1/
 
