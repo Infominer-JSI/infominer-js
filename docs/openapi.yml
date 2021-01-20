@@ -29,8 +29,8 @@ paths:
                       $ref: "#/components/schemas/Dataset"
     post:
       summary: "Upload a dataset file"
-      description:
-        "Uploads a dataset file (.csv) with with the following structure: \n
+      description: "
+        Uploads a dataset file (.csv) with with the following structure: \n
 
         - **Header.** The first line contains the names of the data columns.\n
 
@@ -56,7 +56,6 @@ paths:
           content:
             application/json:
               schema:
-                type: object
                 $ref: "#/components/schemas/FileMetadata"
         '400':
           description: Bad Request
@@ -69,9 +68,40 @@ paths:
     post:
       summary: "Create a dataset"
       description: "Uploads the file metadata to create a new dataset."
+      parameters:
+        - in: path
+          name: datasetId
+          schema:
+            type: integer
+          required: true
+          description: "The dataset ID provided by the **\"Upload a dataset file\"** route."
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FileMetadatUpload"
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dataset:
+                    type: object
+                    description: "The dataset metadata."
+                    properties:
+                      id:
+                        type: integer
+                        format: int32
+                        minimum: 1
+                        description: "
+                          The dataset ID. Used to check the dataset status via the
+                          [\"Check the dataset upload status\"](#/paths/~1datasets~1{datasetId}~1status/get)
+                          route.
+                        "
+
     get:
       summary: "Get the dataset"
       responses:
@@ -216,7 +246,6 @@ components:
         message:
           type: string
           description: "The error message."
-          default: "Bad Request"
         code:
           type: integer
           format: "int32"
@@ -232,7 +261,7 @@ components:
             code:
               default: 400
 
-    UserNotAuhtorized:
+    UserNotAuthorized:
       allOf:
         - $ref: "#/components/schemas/Error"
         - type: object
@@ -290,7 +319,7 @@ components:
               type: array
               description: "The identified fields in the file."
               items:
-                $ref: "#/components/schemas/FileField"
+                $ref: "#/components/schemas/Field"
             metadata:
               type: object
               description: "The metadata available for selection."
@@ -328,23 +357,122 @@ components:
                         { label: "None", value: "none" },
                       ]
 
-    FileField:
+    FileMetadatUpload:
+      type: object
+      properties:
+        dataset:
+          type: object
+          description: "The dataset metadata."
+          properties:
+            name:
+              type: string
+              description: "The dataset name."
+              example: "Top Secret"
+            description:
+              type: string
+              description: "The dataset description."
+              nullable: true
+              example: "This dataset contains top secret information."
+            parameters:
+              type: object
+              description: "The parameters used across the whole dataset analysis."
+              properties:
+                stopwords:
+                  type: object
+                  description: "The stopwords configuration."
+                  nullable: true
+                  properties:
+                    language:
+                      type: string
+                      minLength: 2
+                      maxLength: 2
+                      nullable: true
+                      description: "
+                        The language value. This should be one of the language
+                        values in the **dataset.metadata.stopwords.languages**
+                        attribute of the **\"Upload a dataset file\"** route.
+                      "
+                      example: "en"
+                    words:
+                      type: array
+                      nullable: true
+                      items:
+                        type: string
+                      description: "The array of specific stopwords to ignore."
+                      example: ["top", "secret"]
+            fields:
+              type: array
+              description: "
+                The selected fields metadata. Each item of the array corresponds
+                to one of the fields returned by the **\"Upload a dataset file\"**
+                route.
+                "
+              items:
+                allOf:
+                  - type: object
+                    properties:
+                      name:
+                        type: string
+                      type:
+                        description: "
+                        The selected field. There is some structure of what a
+                        fields type can be based on its suggested type from
+                        the **\"Upload a dataset file\"** route. The type can
+                        be anything that is equal to or lower to the recommended
+                        type on the following list:
+
+                        - number
+
+                        - datetime
+
+                        - category
+
+                        - class
+
+                        - text
+
+
+                        **Example:** If the field was suggested the **category**
+                        type, it can be any of the **category**, **class**, or
+                        **text** types.
+
+                        **Suggestion:** Set the field type to the suggested ones
+                        provided by the **\"Upload a dataset file\"** route.
+
+                        "
+                  - $ref: "#/components/schemas/Field"
+                  - required:
+                    - name
+                    - type
+                    - included
+
+          required:
+            - name
+            - parameters
+            - fields
+      required:
+        - dataset
+
+    Field:
       type: object
       description: "The field metadata."
       properties:
         name:
           type: string
           description: "The field name."
-          example: "label"
+          example: "field"
         type:
           type: string
           enum: ["number", "text", "class", "category", "datetime"]
-          description: "The suggested field type."
-          example: "class"
+          description: "The field type."
+          example: "text"
         included:
           type: boolean
+          description: "
+            True, if the field should be included into the dataset analysis.
+            Otherwise, False.
+            "
           default: true
-
 
     # =============================================
     # DATASET SCHEMAS
@@ -375,13 +503,16 @@ components:
           description: "The number of documents in the dataset."
           example: 42000
         created:
-          type: string
-          format: datetime
+          oneOf:
+            - type: string
+              format: date-time
+            - type: string
+              format: date
           description: "The dataset creation date."
           example: "2021-01-19"
         status:
           type: string
-          enum: ["IN_QUEUE", "LOADING", "FINISHED"]
+          enum: ["IN_QUEUE", "LOADING", "FINISHED", "ERROR"]
           description: "The status of the dataset creation."
           example: "FINISHED"
         group:
