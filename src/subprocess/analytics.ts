@@ -217,9 +217,9 @@ async function getDataset(message: IParentMsg) {
 // updates the dataset
 async function updateDataset(message: IParentMsg) {
     await _functionWrapper(message, async (body) => {
-        const { dataset: data } = body?.content;
-        const dataset = (baseDataset as BaseDataset).updateDataset(data);
-        return { dataset };
+        const { datasets: data } = body?.content;
+        const results = (baseDataset as BaseDataset).updateDataset(data);
+        return results;
     });
 }
 
@@ -247,8 +247,8 @@ async function getSubset(message: IParentMsg) {
 // updates the specific subset
 async function updateSubset(message: IParentMsg) {
     await _functionWrapper(message, async (body) => {
-        const { subsetId, subset } = body?.content;
-        const results = (baseDataset as BaseDataset).updateSubset(subsetId, subset);
+        const { subsetId, subsets } = body?.content;
+        const results = (baseDataset as BaseDataset).updateSubset(subsetId, subsets);
         return results;
     });
 }
@@ -286,8 +286,8 @@ async function getMethods(message: IParentMsg) {
 // creates a new method
 async function createMethod(message: IParentMsg) {
     await _functionWrapper(message, async (body) => {
-        const { method } = body?.content;
-        const results = await (baseDataset as BaseDataset).createMethod(method);
+        const { methods } = body?.content;
+        const results = await (baseDataset as BaseDataset).createMethod(methods);
         return results;
     });
 }
@@ -295,8 +295,8 @@ async function createMethod(message: IParentMsg) {
 // updates an existing method
 async function updateMethod(message: IParentMsg) {
     await _functionWrapper(message, async (body) => {
-        const { methodId, method } = body?.content;
-        const results = await (baseDataset as BaseDataset).updateMethod(methodId, method);
+        const { methodId, methods } = body?.content;
+        const results = await (baseDataset as BaseDataset).updateMethod(methodId, methods);
         return results;
     });
 }

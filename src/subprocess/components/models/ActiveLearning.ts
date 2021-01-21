@@ -12,6 +12,7 @@ import ModelBasic from "./ModelBasic";
 
 // get the promise version of setImmediate
 import { promisify } from "util";
+import { BadRequest } from "../../../utils/ErrorDefs";
 const setImmediateP = promisify(setImmediate);
 
 export default class ActiveLearning extends ModelBasic {
@@ -53,15 +54,20 @@ export default class ActiveLearning extends ModelBasic {
 
     /** Initializes the model. */
     async init(): Promise<ActiveLearning> {
-        // set the feature space
-        await this._setFeatureSpace();
-        // initialize the model
-        this._initializeModel();
-        // get the first document to be labelled
-        this._assignNextDocument();
-        // set the method status
-        this.method.status = EMethodStatus.TRAINING;
-        return this;
+        try {
+            // set the feature space
+            await this._setFeatureSpace();
+            // initialize the model
+            this._initializeModel();
+            // get the first document to be labelled
+            this._assignNextDocument();
+            // set the method status
+            this.method.status = EMethodStatus.TRAINING;
+            return this;
+        } catch (error) {
+            this._handleError(error);
+            return this;
+        }
     }
 
     /**
@@ -69,71 +75,82 @@ export default class ActiveLearning extends ModelBasic {
      * @param updateParams - The update parameters.
      */
     async update(updateParams: IALearnUpdateParams): Promise<ActiveLearning> {
-        const params = this.getParams();
-        // get the parameter information
-        const {
-            next: { documentId, label },
-        } = updateParams.method.documents;
-        // find the document within the elements
-        for (let i = 0; i < this.elements.length; i++) {
-            const element = this.elements[i] as qm.Record;
-            if (element.$id === documentId) {
-                this.model?.setLabel(i, label);
-                // update the method parameters
-                if (!params.method.documents.labelled) {
-                    params.method.documents.labelled = [];
-                }
-                // update the parameters
-                let isExistingDocument = false;
-                for (const labelled of params.method.documents.labelled) {
-                    // check if the document is one of the existing ones
-                    if (labelled.documentId === documentId) {
-                        // get the old label and assign new ones
-                        const oldLabel = labelled.label;
-                        labelled.label = label;
-                        if (label !== oldLabel) {
-                            // change the statistics only if the label is different
-                            this.labelCount.positive += label > 0 ? 1 : -1;
-                            this.labelCount.negative += label > 0 ? -1 : 1;
-                            if (label > 0) {
-                                // switch the document IDs; negative to positive
-                                this.positiveDocs.push(documentId);
-                                this.negativeDocs.splice(this.negativeDocs.indexOf(documentId), 1);
-                            } else {
-                                // switch the document IDs; positive to negative
-                                this.positiveDocs.splice(this.positiveDocs.indexOf(documentId), 1);
-                                this.negativeDocs.push(documentId);
+        try {
+            const params = this.getParams();
+            // get the parameter information
+            const {
+                next: { documentId, label },
+            } = updateParams.method.documents;
+            // find the document within the elements
+            for (let i = 0; i < this.elements.length; i++) {
+                const element = this.elements[i] as qm.Record;
+                if (element.$id === documentId) {
+                    this.model?.setLabel(i, label);
+                    // update the method parameters
+                    if (!params.method.documents.labelled) {
+                        params.method.documents.labelled = [];
+                    }
+                    // update the parameters
+                    let isExistingDocument = false;
+                    for (const labelled of params.method.documents.labelled) {
+                        // check if the document is one of the existing ones
+                        if (labelled.documentId === documentId) {
+                            // get the old label and assign new ones
+                            const oldLabel = labelled.label;
+                            labelled.label = label;
+                            if (label !== oldLabel) {
+                                // change the statistics only if the label is different
+                                this.labelCount.positive += label > 0 ? 1 : -1;
+                                this.labelCount.negative += label > 0 ? -1 : 1;
+                                if (label > 0) {
+                                    // switch the document IDs; negative to positive
+                                    this.positiveDocs.push(documentId);
+                                    this.negativeDocs.splice(
+                                        this.negativeDocs.indexOf(documentId),
+                                        1
+                                    );
+                                } else {
+                                    // switch the document IDs; positive to negative
+                                    this.positiveDocs.splice(
+                                        this.positiveDocs.indexOf(documentId),
+                                        1
+                                    );
+                                    this.negativeDocs.push(documentId);
+                                }
                             }
+                            isExistingDocument = true;
+                            break;
                         }
-                        isExistingDocument = true;
+                    }
+                    if (isExistingDocument) {
                         break;
                     }
-                }
-                if (isExistingDocument) {
+                    params.method.documents.labelled.push({ documentId, label });
+                    // update the model parameters
+                    if (label > 0) {
+                        this.labelCount.positive++;
+                        this.positiveDocs.push(documentId);
+                    } else if (label < 0) {
+                        this.labelCount.negative++;
+                        this.negativeDocs.push(documentId);
+                    }
                     break;
                 }
-                params.method.documents.labelled.push({ documentId, label });
-                // update the model parameters
-                if (label > 0) {
-                    this.labelCount.positive++;
-                    this.positiveDocs.push(documentId);
-                } else if (label < 0) {
-                    this.labelCount.negative++;
-                    this.negativeDocs.push(documentId);
-                }
-                break;
             }
+            this.method.parameters = params;
+            // assign the next document
+            this._assignNextDocument();
+            if (this.isModelInit) {
+                // get the subset statistics
+                this.result = this.statistics();
+                // set the method results for visualization
+                this.method.result = this.result;
+            }
+            return this;
+        } catch (error) {
+            this._handleError(error);
+            return this;
         }
-        this.method.parameters = params;
-        // assign the next document
-        this._assignNextDocument();
-        if (this.isModelInit) {
-            // get the subset statistics
-            this.result = this.statistics();
-            // set the method results for visualization
-            this.method.result = this.result;
-        }
-        return this;
     }
 
     /** Trains the model. */
@@ -373,16 +390,22 @@ export default class ActiveLearning extends ModelBasic {
          * Calculates the average similarity.
          * @param posIDs - The position IDs.
          */
-        const averageSimilarity = (posIDs: qm.la.IntVector) => {
+        const getDistances = (posIDs: qm.la.IntVector) => {
             // get the number of documents and their feature matrix
             const length = posIDs.length;
             const submatrix = this.featureMatrix?.getColSubmatrix(posIDs);
             const onesVec = new qm.la.Vector(new Array(length).fill(1));
             // get the centroid
             const centroid = submatrix?.multiply(onesVec).multiply(1 / length) as qm.la.Vector;
-            // get the average similarity of the documents
-            const avgSim = (1 / length) * (submatrix?.multiplyT(centroid) as qm.la.Vector).sum();
-            return avgSim;
+            // get the distances
+            let dists = submatrix?.multiplyT(centroid) as qm.la.Vector;
+            dists = qm.la.ones(dists.length).minus(dists);
+            // calculate the statistics
+            const mean = qm.statistics.mean(dists) as number;
+            const std = qm.statistics.std(dists) as number;
+            const max = dists[dists.getMaxIdx()];
+            const min = dists[dists.multiply(-1).getMaxIdx()];
+            return { mean, std, max, min };
         };
 
         /**
@@ -414,16 +437,26 @@ export default class ActiveLearning extends ModelBasic {
         return {
             positive: {
                 docIds: positiveDocs.map((rec) => rec.$id),
-                avgSim: averageSimilarity(positivePosIDs),
+                distances: getDistances(positivePosIDs),
                 features: getFeatures("positive"),
                 subsetId: -1,
             },
             negative: {
                 docIds: negativeDocs.map((rec) => rec.$id),
-                avgSim: averageSimilarity(negativePosIDs),
+                distances: getDistances(negativePosIDs),
                 features: getFeatures("negative"),
                 subsetId: -1,
             },
         };
+    }
+
+    /**
+     * Handles the error.
+     * @param error - The error object.
+     */
+    _handleError(error: Error) {
+        // set the method status
+        this.method.status = EMethodStatus.ERROR;
+        throw new BadRequest(error.message);
     }
 }

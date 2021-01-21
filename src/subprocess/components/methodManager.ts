@@ -78,7 +78,8 @@ export default class MethodManager {
                 // create a new model instance
                 model = new KMeansClustering(base, subset, method.parameters as IKMeansModelParams);
                 // initialize the model and train it
-                await (await model.init()).train();
+                await model.init();
+                model.train();
                 break;
             case EMethodType.ACTIVE_LEARNING:
                 // create a new model instance

@@ -37,25 +37,11 @@ export const createMethod = (req: Request, res: Response, next: NextFunction) =>
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId } = parseParams(req);
-        const { method } = parseBody(req);
+        const { methods } = parseBody(req);
         // assign the command
         const cmd = EParentCmd.CREATE_METHOD;
         // return the values
-        return { id: datasetId, owner, cmd, content: { method } };
-    });
-};
-
-// checks the method status
-export const checkMethodStatus = (req: Request, res: Response, next: NextFunction) => {
-    return generalRequestWrapper(req, res, next, () => {
-        // TODO: check request structure
-        // parse the request
-        const { owner } = parseCredentials(req);
-        const { datasetId, methodId } = parseParams(req);
-        // assign the command
-        const cmd = EParentCmd.CHECK_METHOD_STATUS;
-        // return the values
-        return { id: datasetId, owner, cmd, content: { methodId } };
+        return { id: datasetId, owner, cmd, content: { methods } };
     });
 };
 
@@ -80,11 +66,11 @@ export const updateMethod = (req: Request, res: Response, next: NextFunction) =>
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId, methodId } = parseParams(req);
-        const { method } = parseBody(req);
+        const { methods } = parseBody(req);
         // assign the command
         const cmd = EParentCmd.UPDATE_METHOD;
         // return the values
-        return { id: datasetId, owner, cmd, content: { methodId, method } };
+        return { id: datasetId, owner, cmd, content: { methodId, methods } };
     });
 };
 

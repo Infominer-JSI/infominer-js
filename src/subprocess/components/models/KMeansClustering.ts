@@ -5,6 +5,7 @@ import ModelBasic from "./ModelBasic";
 
 // get the promise version of setImmediate
 import { promisify } from "util";
+import { BadRequest } from "../../../utils/ErrorDefs";
 const setImmediateP = promisify(setImmediate);
 
 export default class KMeansClustering extends ModelBasic {
@@ -27,46 +28,56 @@ export default class KMeansClustering extends ModelBasic {
 
     /** Initializes the model. */
     async init(): Promise<KMeansClustering> {
-        // create the feature space and update it with records
-        const { features, distanceType } = this._setFeatures();
-        this.featureSpace = new qm.FeatureSpace(this.base, features);
-        await setImmediateP(this.featureSpace.updateRecords(this.subset.hasElements));
-        // initalize the clustering model
-        this.model = new qm.analytics.KMeans({
-            ...this.params.method,
-            allowEmpty: false,
-            distanceType,
-        });
-        return this;
+        try {
+            // create the feature space and update it with records
+            const { features, distanceType } = this._setFeatures();
+            this.featureSpace = new qm.FeatureSpace(this.base, features);
+            await setImmediateP(this.featureSpace.updateRecords(this.subset.hasElements));
+            // initalize the clustering model
+            this.model = new qm.analytics.KMeans({
+                ...this.params.method,
+                allowEmpty: false,
+                distanceType,
+            });
+            return this;
+        } catch (error) {
+            this._handleError(error);
+            return this;
+        }
     }
 
     /** Trains the model. */
     async train(): Promise<KMeansClustering> {
-        // set the method status
-        this.method.status = EMethodStatus.TRAINING;
-        // get the feature matrix and train the model
-        const matrix = this.featureSpace?.extractSparseMatrix(
-            this.subset.hasElements
-        ) as qm.la.SparseMatrix;
-        // get the columns with non-zero norms
-        const norms = matrix.colNorms();
-        const nonzeros = new qm.la.IntVector();
-        const zeros = new qm.la.IntVector();
-        for (let i = 0; i < norms.length; i++) {
-            norms[i] !== 0 ? nonzeros.push(i) : zeros.push(i);
+        try {
+            // set the method status
+            this.method.status = EMethodStatus.TRAINING;
+            // get the feature matrix and train the model
+            const matrix = this.featureSpace?.extractSparseMatrix(
+                this.subset.hasElements
+            ) as qm.la.SparseMatrix;
+            // get the columns with non-zero norms
+            const norms = matrix.colNorms();
+            const nonzeros = new qm.la.IntVector();
+            const zeros = new qm.la.IntVector();
+            for (let i = 0; i < norms.length; i++) {
+                norms[i] !== 0 ? nonzeros.push(i) : zeros.push(i);
+            }
+            const submatrix = matrix.getColSubmatrix(nonzeros);
+            await this._trainModel(submatrix as qm.la.SparseMatrix);
+            // get the cluster statistics
+            this._clusterStatistics(submatrix, nonzeros);
+            // assign the empty cluster
+            if (zeros.length !== 0) {
+                this._emptyCluster(zeros);
+            }
+            // set the method results
+            this.method.result = this.result;
+            this.method.status = EMethodStatus.FINISHED;
+            return this;
+        } catch (error) {
+            this._handleError(error);
+            return this;
         }
-        const submatrix = matrix.getColSubmatrix(nonzeros);
-        await this._trainModel(submatrix as qm.la.SparseMatrix);
-        // get the cluster statistics
-        this._clusterStatistics(submatrix, nonzeros);
-        // assign the empty cluster
-        if (zeros.length !== 0) {
-            this._emptyCluster(zeros);
-        }
-        // set the method results
-        this.method.result = this.result;
-        this.method.status = EMethodStatus.FINISHED;
-        return this;
     }
 
     /** Get the method parameters. */
@@ -140,7 +151,7 @@ export default class KMeansClustering extends ModelBasic {
         const params = this.getParams();
         // prepare clusters statistics placeholder
         const clusters = Array(...Array(params.method?.k)).map(() => ({
-            distance: {
+            distances: {
                 max: -1,
                 min: -1,
                 mean: -1,
@@ -199,7 +210,7 @@ export default class KMeansClustering extends ModelBasic {
             const std = qm.statistics.std(dists) as number;
             const max = dists[dists.getMaxIdx()];
             const min = dists[dists.multiply(-1).getMaxIdx()];
-            clusters[parseInt(clusterId)].distance = { mean, std, max, min };
+            clusters[parseInt(clusterId)].distances = { mean, std, max, min };
 
             // get the top features of the centroid
             const sort = centroid.sortPerm(false);
@@ -228,5 +239,15 @@ export default class KMeansClustering extends ModelBasic {
             docIds: zeros.toArray(),
             subsetId: -1,
         };
+    }
+
+    /**
+     * Handles the error.
+     * @param error - The error object.
+     */
+    _handleError(error: Error) {
+        // set the method status
+        this.method.status = EMethodStatus.ERROR;
+        throw new BadRequest(error.message);
     }
 }

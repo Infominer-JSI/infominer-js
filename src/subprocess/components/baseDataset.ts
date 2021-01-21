@@ -56,9 +56,9 @@ export default class BaseDataset {
         // store preprocessing information
         this.processing = {
             stopwords: {
-                language: "en",
+                language: "none",
                 words: [""],
-                ...params.processing.stopwords,
+                ...(params.processing && { ...params.processing.stopwords }),
             },
         };
         // contains database metadata
@@ -94,8 +94,7 @@ export default class BaseDataset {
                     [EMethodStatus.IN_QUEUE, EMethodStatus.TRAINING].includes(rec.status)
                 )
                 .each((rec) => {
-                    rec.status = EMethodStatus.FINISHED;
-                    rec.deleted = true;
+                    rec.status = EMethodStatus.ERROR;
                 });
         } else {
             throw Error(`Invalid base mode; mode=${mode}`);
@@ -219,7 +218,9 @@ export default class BaseDataset {
             }
         }
         // return the updated metadata
-        return this.metadata;
+        return {
+            datasets: this._formatDataset(),
+        };
     }
 
     /**
@@ -227,18 +228,28 @@ export default class BaseDataset {
      */
     getDataset() {
         return {
-            dataset: {
-                type: "dataset",
-                ...this.metadata,
-                nDocuments: this.base?.store("Dataset").length,
-                fields: this.fields.map((field) => ({
-                    name: field.name,
-                    type: field.type,
-                    group: field.group,
-                })),
-            },
+            datasets: this._formatDataset(),
             ...subsetManager.getSubsets(this.base as qm.Base),
             ...methodManager.getMethods(this.base as qm.Base),
+        };
+    }
+
+    /**
+     * Formats the dataset object in a consistent way.
+     */
+    _formatDataset() {
+        return {
+            id: this.metadata.id,
+            type: "dataset",
+            name: this.metadata.name,
+            description: this.metadata.description,
+            nDocuments: this.base?.store("Dataset").length,
+            created: this.metadata.created,
+            fields: this.fields.map((field) => ({
+                name: field.name,
+                type: field.type,
+                group: field.group,
+            })),
         };
     }
 
@@ -295,57 +306,6 @@ export default class BaseDataset {
             // close the parser
             parser.end();
         });
-    }
-
-    /**
-     * Formats the record for the base.
-     * @param values - The record values.
-     * @param fields - The base fields.
-     */
-    _formatRecord(values: string[], fields: IField[]) {
-        const record: { [key: string]: number | number[] | string | string[] | null } = {};
-        for (let i = 0; i < fields.length; i++) {
-            const value = values[i];
-            const field = fields[i];
-            if (field.included) {
-                record[field.name] = this._parseValue(value, field.type);
-            }
-        }
-        return record;
-    }
-
-    /**
-     * Parses the value based on its type.
-     * @param value - The record value.
-     * @param type - The value type.
-     */
-    _parseValue(value: string, type: string) {
-        // handle empty values
-        if (this._isValueEmpty(value)) {
-            return null;
-        }
-        // otherwise parse the value based on its type
-        switch (type) {
-            case "number":
-                return parseFloat(value);
-            case "datetime":
-                return new Date(value).toISOString();
-            case "category":
-                return value.split(/[\\/]/g);
-            case "text":
-            case "class":
-                return value;
-            default:
-                throw new Error('Type is not "text", "class", "number", "datetime" or "category"');
-        }
-    }
-
-    /**
-     * Checks if the value is empty.
-     * @param value - The value.
-     */
-    _isValueEmpty(value: string) {
-        return value === null || value === "";
     }
 
     /////////////////////////////////////////////
@@ -441,9 +401,14 @@ export default class BaseDataset {
         const stopwords = copy(this.processing.stopwords);
         if (method.parameters.processing?.stopwords?.words) {
             stopwords.words.push(...method.parameters.processing.stopwords.words);
+            // override the method with the combination of default and method specific stopwords
+            method.parameters.processing.stopwords = stopwords;
+        } else if (!method.parameters.processing?.stopwords) {
+            method.parameters.processing.stopwords = stopwords;
+        } else if (!method.parameters.processing) {
+            method.parameters.processing = { stopwords };
         }
-        // override the method with the combination of default and method specific stopwords
-        method.parameters.processing.stopwords = stopwords;
+
         // create a new method
         const { methods } = await methodManager.createMethod(
             this.base as qm.Base,
@@ -563,7 +528,7 @@ export default class BaseDataset {
             resultedIn: method,
             documents,
         });
-        return subsets;
+        return subsets.id;
     }
 
     /////////////////////////////////////////////

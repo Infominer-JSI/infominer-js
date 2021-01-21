@@ -132,12 +132,6 @@ const routeDefs = [
     },
     {
         method: "GET",
-        route: "/datasets/:datasetId/methods/:methodId/status",
-        middleware: validators.methods,
-        controller: controllers.checkMethodStatus,
-    },
-    {
-        method: "GET",
         route: "/datasets/:datasetId/methods/:methodId",
         middleware: validators.methods,
         controller: controllers.getMethod,
