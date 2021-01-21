@@ -146,7 +146,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/FileMetadatUpload"
+              $ref: "#/components/schemas/FileMetadataUpload"
       responses:
         '200':
           description: OK
@@ -224,16 +224,22 @@ paths:
               schema:
                 type: object
                 properties:
-                  name:
-                    type: string
-                    nullable: true
-                    example: "Not a Secret Dataset"
-                    description: "The new dataset name."
-                  description:
-                    type: string
-                    nullable: true
-                    example: "This is certainly not a secret dataset."
-                    description: "The new dataset description."
+                  datasets:
+                    type: object
+                    description: "The dataset metadata."
+                    properties:
+                      name:
+                        type: string
+                        nullable: true
+                        example: "Not a Secret Dataset"
+                        description: "The new dataset name."
+                      description:
+                        type: string
+                        nullable: true
+                        example: "This is certainly not a secret dataset."
+                        description: "The new dataset description."
+                required:
+                - datasets
       responses:
         '200':
           description: OK
@@ -382,9 +388,25 @@ paths:
         Sends the parameters and execute the method. Some methods require
         additional updates to finalize the methods training (e.g. active learning).
       "
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MethodCreateParams"
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  methods:
+                    allOf:
+                    - type: object
+                      description: "The method metadata."
+                    - $ref: "#/components/schemas/MethodCreated"
+
         '400':
           description: Bad Request
           content:
@@ -447,9 +469,33 @@ paths:
       description: "
         Updates the method with new metadata and required to finalize the training process.
       "
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                methods:
+                  allOf:
+                  - type: object
+                    description: "The method update metadata."
+                  - $ref: "#/components/schemas/MethodUpdateParams"
+              required:
+                - methods
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  methods:
+                    allOf:
+                    - type: object
+                      description: "The method metadata."
+                    - $ref: "#/components/schemas/MethodUpdated"
+
         '400':
           description: Bad Request
           content:
@@ -492,43 +538,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/BadRequest"
 
-
-  /datasets/{datasetId}/methods/{methodId}/status:
-    parameters:
-      - in: path
-        name: datasetId
-        schema:
-          type: integer
-          minimum: 1
-        required: true
-        description: "The dataset ID."
-      - in: path
-        name: methodId
-        schema:
-          type: integer
-          minimum: 0
-        required: true
-        description: "The method ID."
-
-    get:
-      tags:
-        - Method
-      summary: "Check the method creation status"
-      description: "Checks if the methods status of the training process."
-      deprecated: true
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Method"
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BadRequest"
 
   # =============================================
   # SUBSET ROUTES
@@ -576,7 +585,9 @@ paths:
       tags:
         - Subset
       summary: "Create a subset"
-      description: "Creates a new subset using the provided metadata."
+      description: "
+        Creates a new subset using the provided metadata. **NOTE:** Not implemented yet.
+      "
       deprecated: true
       parameters:
         - in: path
@@ -587,14 +598,12 @@ paths:
           required: true
           description: "The dataset ID."
       responses:
-        '200':
-          description: OK
-        '400':
-          description: Bad Request
+        '500':
+          description: Server Side Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BadRequest"
+                $ref: "#/components/schemas/ServerError"
 
   /datasets/{datasetId}/subsets/{subsetId}:
     parameters:
@@ -653,16 +662,22 @@ paths:
               schema:
                 type: object
                 properties:
-                  label:
-                    type: string
-                    nullable: true
-                    example: "New Subset Label"
-                    description: "The new subset label."
-                  description:
-                    type: string
-                    nullable: true
-                    example: "This is the new subset description."
-                    description: "The new subset description."
+                  subsets:
+                    type: object
+                    description: "The subset metadata."
+                    properties:
+                      label:
+                        type: string
+                        nullable: true
+                        example: "New Subset Label"
+                        description: "The new subset label."
+                      description:
+                        type: string
+                        nullable: true
+                        example: "This is the new subset description."
+                        description: "The new subset description."
+                required:
+                - subsets
       responses:
         '200':
           description: OK
@@ -793,9 +808,57 @@ paths:
       description: "
         Gets an array of documents that match the provided query criteria.
       "
+      parameters:
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: "The number of documents to skip before starting to collect the result set."
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          description: "The numbers of documents to return."
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: null
+          description: "The page number of documents to return."
+        - in: query
+          name: subsetId
+          schema:
+            type: integer
+            default: 0
+          description: "
+            The ID of the subset to query from. **Default:** query from the **\"root\"** subset,
+            i.e. over all documents.
+          "
+        - in: query
+          name: aggregates
+          schema:
+            type: boolean
+            default: false
+          description: "
+            True, if the response should also contain the aggregate statistics of the retrieved
+            documents. Otherwise, False.
+          "
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documents:
+                    type: array
+                    minItems: 0
+                    items:
+                      $ref: "#/components/schemas/Document"
+                    description: "The array of retrieved documents."
         '400':
           description: Bad Request
           content:
@@ -827,6 +890,20 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documents:
+                    description: "The retrieved document."
+                    $ref: "#/components/schemas/Document"
+                  subsets:
+                    type: array
+                    minItems: 1
+                    items:
+                      $ref: "#/components/schemas/Subset"
+                    description: "The array of subsets it belongs to."
         '400':
           description: Bad Request
           content:
@@ -839,18 +916,16 @@ paths:
         - Document
       summary: "Update a document"
       description: "
-        Updates the document with the provided metadata.
+        Updates the document with the provided metadata. **NOTE:** Not implemented yet.
       "
       deprecated: true
       responses:
-        '200':
-          description: OK
-        '400':
-          description: Bad Request
+        '500':
+          description: "Server Side Error"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BadRequest"
+                $ref: "#/components/schemas/ServerError"
 
 
 # =============================================
@@ -921,7 +996,7 @@ components:
     FileMetadata:
       type: object
       properties:
-        dataset:
+        datasets:
           type: object
           description: "The file metadata."
           properties:
@@ -947,47 +1022,47 @@ components:
                 $ref: "#/components/schemas/Field"
               description: "The identified fields in the file."
 
-            metadata:
+        metadata:
+          type: object
+          description: "The metadata available for selection."
+          properties:
+            types:
+              type: array
+              items:
+                type: string
+                enum: ["number", "text", "class", "category", "datetime"]
+              example: ["number", "text", "class", "category", "datetime"]
+              description: "Possible field types."
+            stopwords:
               type: object
-              description: "The metadata available for selection."
+              description: "The stopwords metadata."
               properties:
-                types:
+                languages:
                   type: array
+                  example: [
+                    { label: "English", value: "en" },
+                    { label: "German", value: "de" },
+                    { label: "Slovene", value: "si" },
+                    { label: "Spanish", value: "es" },
+                    { label: "None", value: "none" },
+                  ]
                   items:
-                    type: string
-                    enum: ["number", "text", "class", "category", "datetime"]
-                  example: ["number", "text", "class", "category", "datetime"]
-                  description: "Possible field types."
-                stopwords:
-                  type: object
-                  description: "The stopwords metadata."
-                  properties:
-                    languages:
-                      type: array
-                      example: [
-                        { label: "English", value: "en" },
-                        { label: "German", value: "de" },
-                        { label: "Slovene", value: "si" },
-                        { label: "Spanish", value: "es" },
-                        { label: "None", value: "none" },
-                      ]
-                      items:
-                        type: object
-                        properties:
-                          label:
-                            type: string
-                            description: "The full name of the language."
-                          value:
-                            type: string
-                            minLength: 2
-                            maxLength: 2
-                            description: "The language value."
-                      description: "The array of all infominer supported stopwords."
+                    type: object
+                    properties:
+                      label:
+                        type: string
+                        description: "The full name of the language."
+                      value:
+                        type: string
+                        minLength: 2
+                        maxLength: 2
+                        description: "The language value."
+                  description: "The array of all infominer supported stopwords."
 
-    FileMetadatUpload:
+    FileMetadataUpload:
       type: object
       properties:
-        dataset:
+        datasets:
           type: object
           description: "The dataset metadata."
           properties:
@@ -1070,7 +1145,7 @@ components:
             - parameters
             - fields
       required:
-        - dataset
+        - datasets
 
     Field:
       type: object
@@ -1306,7 +1381,7 @@ components:
           "
 
     AggregatesSubset:
-      title: "aggregates.subset"
+      title: "subset aggregates"
       allOf:
       - $ref: "#/components/schemas/MethodBase"
       - type: object
@@ -1339,7 +1414,7 @@ components:
                     - $ref: "#/components/schemas/AggrHistogram"
 
     ClusteringKMeans:
-      title: "clustering.kmeans"
+      title: "kmeans clustering"
       allOf:
       - $ref: "#/components/schemas/MethodBase"
       - type: object
@@ -1440,7 +1515,7 @@ components:
                     "
 
     ActiveLearning:
-      title: "classifier.active_learning"
+      title: "active learning"
       allOf:
       - $ref: "#/components/schemas/MethodBase"
       - type: object
@@ -1598,6 +1673,202 @@ components:
         - $ref: "#/components/schemas/ClusteringKMeans"
         - $ref: "#/components/schemas/ActiveLearning"
 
+    MethodCreated:
+      title: "method"
+      type: object
+      anyOf:
+        - $ref: "#/components/schemas/ClusteringKMeans"
+        - $ref: "#/components/schemas/ActiveLearning"
+
+    MethodUpdated:
+      title: "method"
+      type: object
+      anyOf:
+        - $ref: "#/components/schemas/ActiveLearning"
+
+    MethodCreateParams:
+      title: "method"
+      type: object
+      properties:
+        methods:
+          description: "The method create parameters."
+          anyOf:
+            - $ref: "#/components/schemas/MethodCreateKMeans"
+            - $ref: "#/components/schemas/MethodCreateActiveLearning"
+      required:
+        - methods
+
+
+    MethodCreateKMeans:
+      title: "kmeans clustering"
+      type: object
+      properties:
+        type:
+          type: string
+          default: "clustering.kmeans"
+          description: "The method type."
+        parameters:
+          type: object
+          description: "The method creation parameters."
+          properties:
+            subsetId:
+              type: integer
+              example: 3
+              description: "The subset ID the method was applied on."
+            fields:
+              type: array
+              items:
+                type: string
+              minItems: 1
+              example: ["field"]
+              description: "
+                The array of field names used in active learning.
+              "
+            processing:
+              $ref: "#/components/schemas/HProcessing"
+            method:
+              type: object
+              description: "The algorithm parameters."
+              properties:
+                clusteringType:
+                  type: string
+                  enum: ["text", "number"]
+                  example: "text"
+                  description: "
+                    The clustering type. It can cluster by either numbers or text fields.
+                  "
+                k:
+                  type: number
+                  minimum: 2
+                  example: 2
+                  description: "
+                    The number of clusters to be generated.
+                  "
+              required:
+                - clusteringType
+                - k
+          required:
+            - subsetId
+            - fields
+            - method
+      required:
+        - type
+        - parameters
+
+    MethodCreateActiveLearning:
+      title: "active learning"
+      type: object
+      properties:
+        type:
+          type: string
+          default: "classifier.active_learning"
+          description: "The method type."
+        parameters:
+          type: object
+          description: "The method creation parameters."
+          properties:
+            subsetId:
+              type: integer
+              example: 3
+              description: "The subset ID the method was applied on."
+            fields:
+              type: array
+              items:
+                type: string
+              minItems: 1
+              example: ["field"]
+              description: "
+                The array of field names used in active learning.
+              "
+            processing:
+              $ref: "#/components/schemas/HProcessing"
+            method:
+              type: object
+              description: "The algorithm parameters."
+              properties:
+                query:
+                  type: string
+                  example: "Lets try and find TOP SECRET documents"
+                  description: "
+                    The source query text used to initalize the active learning. This text
+                    will be used to find the positive and negative document examples
+                    used to initialize the active learning classifier.
+                  "
+              required:
+                - query
+          required:
+            - subsetId
+            - fields
+            - method
+      required:
+        - type
+        - parameters
+
+    MethodUpdateParams:
+      type: object
+      description: "The method update parameters."
+      anyOf:
+        - $ref: "#/components/schemas/MethodUpdateUpdate"
+        - $ref: "#/components/schemas/MethodUpdateTrain"
+
+    MethodUpdateUpdate:
+      title: "update"
+      type: object
+      description: "The method update base."
+      properties:
+        step:
+          type: string
+          default: "update"
+          description: "The update step."
+        parameters:
+          type: object
+          description: "The update parameters."
+          anyOf:
+            - $ref: "#/components/schemas/MethodUpdateUpdateAL"
+      required:
+        - step
+        - parameters
+
+    MethodUpdateTrain:
+      title: "train"
+      type: object
+      description: "The method train base."
+      properties:
+        step:
+          type: string
+          default: "train"
+          description: "The training step."
+      required:
+        - step
+
+
+    MethodUpdateUpdateAL:
+      title: "active learning"
+      type: object
+      description: "The active learning update parameters."
+      properties:
+        next:
+          type: object
+          description: "
+            The next document selected to be labelled by the user.
+          "
+          properties:
+            documentId:
+              type: integer
+              minimum: 0
+              description: "The document ID."
+            label:
+              type: integer
+              enum: [-1, 1]
+              nullable: true
+              default: null
+              description: "The negative (-1) or positive (1) label of the document."
+          required:
+            - documentId
+            - label
+      required:
+        - next
+
 
     # =============================================
     # HELPER SCHEMAS
@@ -1630,6 +1901,7 @@ components:
     HProcessing:
       title: "processing"
       type: object
+      nullable: true
       description: "
         The processing parameters used to generate the features and execute the method.
       "
@@ -1938,3 +2210,31 @@ components:
             The cumulative percentage sum.
           "
 
+    # =============================================
+    # DOCUMENT SCHEMAS
+    # =============================================
+
+    Document:
+      title: "document"
+      type: object
+      description: "The document metadata."
+      properties:
+        id:
+          type: integer
+          minimum: 0
+          description: "The document ID."
+        type:
+          type: string
+          default: "document"
+          description: "The document type."
+        subsets:
+          type: array
+          minItems: 0
+          items:
+            type: integer
+            minimum: 0
+          example: [0, 1, 5]
+          description: "The array of IDs of subsets that contain the document."
+        values:
+          type: object
+          description: "The document key-values."
