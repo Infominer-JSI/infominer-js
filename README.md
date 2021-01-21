@@ -32,7 +32,7 @@ IF you are in a hurry, just follow these steps:
     node ./load/upgrade
     ```
 
-4. Access the backend on `localhost:8100`. See WIKI for API documentation.
+4. Access the backend on `localhost:8100`. See the [API Docs][docs] to figure out how to use it.
 
 ## Installation
 
@@ -300,6 +300,7 @@ sudo docker-compose rm -s backend
 sudo docker-compose down
 ```
 
+[docs]: https://infominer-jsi.github.io/infominer-backend/
 [postgres-docker]: https://hub.docker.com/_/postgres
 [postgres-manual]: https://www.postgresql.org/download/
 [docker-compose]: ./docker/docker-compose.yml
