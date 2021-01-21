@@ -1376,6 +1376,7 @@ components:
           description: "The method result."
         modified:
           type: boolean
+          default: false
           description: "
             True, if the method was modified since it was finished. Otherwise, False.
           "
@@ -1499,6 +1500,20 @@ components:
                           description: "
                             The maximum distance between the documents and the cluster centroid.
                           "
+                    features:
+                      type: array
+                      minItems: 1
+                      description: "The top 100 features of the cluster centroid."
+                      items:
+                          type: object
+                          description: "The top features."
+                          properties:
+                            feature:
+                              type: string
+                              description: "The feature name."
+                            weight:
+                              type: number
+                              description: "The feature weight."
               empty:
                 type: object
                 nullable: true
@@ -1620,6 +1635,30 @@ components:
                     description: "
                       The ID of the subset containing the positive document examples.
                     "
+                  distances:
+                    type: object
+                    description: "The positive subset distances/statistics."
+                    properties:
+                      mean:
+                        type: number
+                        description: "
+                          The mean of distances between the documents and the subset centroid.
+                        "
+                      std:
+                        type: number
+                        description: "
+                          The standard deviation average of distances between the documents and the subset centroid.
+                        "
+                      min:
+                        type: number
+                        description: "
+                          The minimum distance between the documents and the subset centroid.
+                        "
+                      max:
+                        type: number
+                        description: "
+                          The maximum distance between the documents and the subset centroid.
+                        "
                   features:
                     type: array
                     minItems: 1
@@ -1647,6 +1686,30 @@ components:
                     description: "
                       The ID of the subset containing the negative document examples.
                     "
+                  distances:
+                    type: object
+                    description: "The negative subset distances/statistics."
+                    properties:
+                      mean:
+                        type: number
+                        description: "
+                          The mean of distances between the documents and the subset centroid.
+                        "
+                      std:
+                        type: number
+                        description: "
+                          The standard deviation average of distances between the documents and the subset centroid.
+                        "
+                      min:
+                        type: number
+                        description: "
+                          The minimum distance between the documents and the subset centroid.
+                        "
+                      max:
+                        type: number
+                        description: "
+                          The maximum distance between the documents and the subset centroid.
+                        "
                   features:
                     type: array
                     minItems: 1
