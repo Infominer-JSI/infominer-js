@@ -23,7 +23,7 @@ export const getDocuments = (req: Request, res: Response, next: NextFunction) =>
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId } = parseParams(req);
-        const { offset, limit, subsetId, aggregates } = parseQuery(req);
+        const { offset, limit, page, subsetId, aggregates } = parseQuery(req);
         // assign the command
         const cmd = EParentCmd.GET_DOCUMENTS;
         // return the values
@@ -31,7 +31,7 @@ export const getDocuments = (req: Request, res: Response, next: NextFunction) =>
             id: datasetId,
             owner,
             cmd,
-            content: { query: { offset, limit, subsetId, aggregates } },
+            content: { query: { offset, limit, page, subsetId, aggregates } },
         };
     });
 };

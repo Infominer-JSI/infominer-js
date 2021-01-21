@@ -9,7 +9,7 @@ BEGIN
         LEFT JOIN pg_namespace p ON t.typnamespace=p.oid
         WHERE t.typname='status' AND p.nspname='infominer'
     ) THEN
-        CREATE TYPE infominer.status AS ENUM ('IN_QUEUE', 'LOADING', 'FINISHED');
+        CREATE TYPE infominer.status AS ENUM ('IN_QUEUE', 'LOADING', 'FINISHED', 'ERROR');
     END IF;
 END
 $$;

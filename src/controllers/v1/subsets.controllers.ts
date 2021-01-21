@@ -37,11 +37,11 @@ export const createSubset = (req: Request, res: Response, next: NextFunction) =>
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId } = parseParams(req);
-        const { subset } = parseBody(req);
+        const { subsets } = parseBody(req);
         // assign the command
         const cmd = EParentCmd.CREATE_SUBSET;
         // return the values
-        return { id: datasetId, owner, cmd, content: { subset } };
+        return { id: datasetId, owner, cmd, content: { subsets } };
     });
 };
 
@@ -66,11 +66,11 @@ export const updateSubset = (req: Request, res: Response, next: NextFunction) =>
         // parse the request
         const { owner } = parseCredentials(req);
         const { datasetId, subsetId } = parseParams(req);
-        const { subset } = parseBody(req);
+        const { subsets } = parseBody(req);
         // assign the command
         const cmd = EParentCmd.UPDATE_SUBSET;
         // return the values
-        return { id: datasetId, owner, cmd, content: { subsetId, subset } };
+        return { id: datasetId, owner, cmd, content: { subsetId, subsets } };
     });
 };
 

@@ -140,7 +140,7 @@ export default class KMeansClustering extends ModelBasic {
         const params = this.getParams();
         // prepare clusters statistics placeholder
         const clusters = Array(...Array(params.method?.k)).map(() => ({
-            distance: {
+            distances: {
                 max: -1,
                 min: -1,
                 mean: -1,
@@ -199,7 +199,7 @@ export default class KMeansClustering extends ModelBasic {
             const std = qm.statistics.std(dists) as number;
             const max = dists[dists.getMaxIdx()];
             const min = dists[dists.multiply(-1).getMaxIdx()];
-            clusters[parseInt(clusterId)].distance = { mean, std, max, min };
+            clusters[parseInt(clusterId)].distances = { mean, std, max, min };
 
             // get the top features of the centroid
             const sort = centroid.sortPerm(false);

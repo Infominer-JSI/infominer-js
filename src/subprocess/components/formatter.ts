@@ -26,11 +26,11 @@ export default {
         id: rec.$id,
         type: "method",
         method: rec.type,
-        parameters: rec.parameters,
         status: rec.status,
-        result: formatMethodResults(rec.type, rec.result),
-        produced: rec.produced && !rec.produced.empty ? availableRecords(rec.produced) : null,
         appliedOn: rec.appliedOn?.$id,
+        produced: rec.produced && !rec.produced.empty ? availableRecords(rec.produced) : null,
+        parameters: rec.parameters,
+        result: formatMethodResults(rec.type, rec.result),
         modified: rec.modified,
     }),
 
@@ -78,11 +78,15 @@ function formatMethodResults(type: string, result: any) {
             // handle kmeans clustering results
             return {
                 clusters: result.clusters.map((cluster: any) => ({
-                    distance: cluster.distance,
-                    topVals: cluster.topVals,
                     subsetId: cluster.subsetId,
-                    count: cluster.count,
+                    distances: cluster.distances,
+                    features: cluster.features,
                 })),
+                ...(result.empty && {
+                    empty: {
+                        subsetId: result.empty.subsetId,
+                    },
+                }),
             };
         case EMethodType.ACTIVE_LEARNING:
             // handle active learning results
@@ -90,14 +94,14 @@ function formatMethodResults(type: string, result: any) {
             return {
                 labelCount: labelCount,
                 positive: {
-                    avgSim: positive.avgSim,
-                    features: positive.features,
                     subsetId: positive.subsetId,
+                    distances: positive.distances,
+                    features: positive.features,
                 },
                 negative: {
-                    avgSim: negative.avgSim,
-                    features: negative.features,
                     subsetId: negative.subsetId,
+                    distances: negative.distances,
+                    features: negative.features,
                 },
             };
         default:

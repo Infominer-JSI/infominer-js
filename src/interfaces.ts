@@ -18,6 +18,7 @@ export enum EDatasetStatus {
     IN_QUEUE = "IN_QUEUE",
     LOADING = "LOADING",
     FINISHED = "FINISHED",
+    ERROR = "ERROR",
 }
 
 export interface IField {
@@ -188,6 +189,7 @@ export enum EMethodStatus {
     IN_QUEUE = "IN_QUEUE",
     TRAINING = "TRAINING",
     FINISHED = "FINISHED",
+    ERROR = "ERROR",
 }
 
 export interface IMethodRecord extends qm.Record {
@@ -331,9 +333,10 @@ export interface IMethodUpdateParams {
 }
 
 export interface IHierarchyObject {
-    name: string;
-    size: number;
-    children: IHierarchyObject[];
+    value: string;
+    frequency: number;
+    precent: number;
+    descendents: IHierarchyObject[];
 }
 
 //////////////////////////////////////////////////////

@@ -373,16 +373,22 @@ export default class ActiveLearning extends ModelBasic {
          * Calculates the average similarity.
          * @param posIDs - The position IDs.
          */
-        const averageSimilarity = (posIDs: qm.la.IntVector) => {
+        const getDistances = (posIDs: qm.la.IntVector) => {
             // get the number of documents and their feature matrix
             const length = posIDs.length;
             const submatrix = this.featureMatrix?.getColSubmatrix(posIDs);
             const onesVec = new qm.la.Vector(new Array(length).fill(1));
             // get the centroid
             const centroid = submatrix?.multiply(onesVec).multiply(1 / length) as qm.la.Vector;
-            // get the average similarity of the documents
-            const avgSim = (1 / length) * (submatrix?.multiplyT(centroid) as qm.la.Vector).sum();
-            return avgSim;
+            // get the distances
+            let dists = submatrix?.multiplyT(centroid) as qm.la.Vector;
+            dists = qm.la.ones(dists.length).minus(dists);
+            // calculate the statistics
+            const mean = qm.statistics.mean(dists) as number;
+            const std = qm.statistics.std(dists) as number;
+            const max = dists[dists.getMaxIdx()];
+            const min = dists[dists.multiply(-1).getMaxIdx()];
+            return { mean, std, max, min };
         };
 
         /**
@@ -414,13 +420,13 @@ export default class ActiveLearning extends ModelBasic {
         return {
             positive: {
                 docIds: positiveDocs.map((rec) => rec.$id),
-                avgSim: averageSimilarity(positivePosIDs),
+                distances: getDistances(positivePosIDs),
                 features: getFeatures("positive"),
                 subsetId: -1,
             },
             negative: {
                 docIds: negativeDocs.map((rec) => rec.$id),
-                avgSim: averageSimilarity(negativePosIDs),
+                distances: getDistances(negativePosIDs),
                 features: getFeatures("negative"),
                 subsetId: -1,
             },
