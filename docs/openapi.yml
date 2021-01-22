@@ -1213,6 +1213,7 @@ components:
           description: "The dataset creation date."
 
     DatasetDB:
+      title: "dataset"
       allOf:
         - $ref: "#/components/schemas/DatasetBase"
         - properties:
