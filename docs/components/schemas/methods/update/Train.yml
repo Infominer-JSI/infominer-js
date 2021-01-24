@@ -1,0 +1,10 @@
+title: "train"
+type: object
+description: "The method train base."
+properties:
+  step:
+    type: string
+    default: "train"
+    description: "The training step."
+required:
+  - step

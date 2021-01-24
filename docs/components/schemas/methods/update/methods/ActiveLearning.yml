@@ -1,0 +1,25 @@
+title: "active learning"
+type: object
+description: "The active learning update parameters."
+properties:
+  next:
+    type: object
+    description: "
+      The next document selected to be labelled by the user.
+    "
+    properties:
+      documentId:
+        type: integer
+        minimum: 0
+        description: "The document ID."
+      label:
+        type: integer
+        enum: [-1, 1]
+        nullable: true
+        default: null
+        description: "The negative (-1) or positive (1) label of the document."
+    required:
+      - documentId
+      - label
+required:
+  - next

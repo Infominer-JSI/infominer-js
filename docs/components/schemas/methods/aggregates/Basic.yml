@@ -1,0 +1,15 @@
+type: object
+properties:
+  field:
+    type: string
+    nullable: false
+    example: "label"
+    description: "The field name."
+  type:
+    type: string
+    nullable: false
+    description: "The aggregate type."
+  statistics:
+    type: object
+    nullable: false
+    description: "The aggregate statistics."

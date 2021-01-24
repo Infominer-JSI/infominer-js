@@ -1,0 +1,23 @@
+title: "document"
+type: object
+description: "The document metadata."
+properties:
+  id:
+    type: integer
+    minimum: 0
+    description: "The document ID."
+  type:
+    type: string
+    default: "document"
+    description: "The document type."
+  subsets:
+    type: array
+    minItems: 0
+    items:
+      type: integer
+      minimum: 0
+    example: [0, 1, 5]
+    description: "The array of IDs of subsets that contain the document."
+  values:
+    type: object
+    description: "The document key-values."

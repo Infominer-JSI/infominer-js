@@ -1,0 +1,10 @@
+title: "method"
+type: object
+properties:
+  methods:
+    description: "The method create parameters."
+    anyOf:
+    - $ref: "ActiveLearning.yml"
+    - $ref: "KMeans.yml"
+  required:
+  - methods

@@ -1,0 +1,27 @@
+title: "dataset"
+allOf:
+  - $ref: "dataset/Base.yml"
+  - properties:
+      fields:
+        type: array
+        minItems: 1
+        items:
+          type: object
+          description: "The field metadata."
+          properties:
+            name:
+              type: string
+              nullable: false
+              description: "The field name."
+            type:
+              type: string
+              enum: ["string", "datetime", "string_v", "float"]
+              description: "The data type of the field."
+            group:
+              type: string
+              enum: ["number", "text", "class", "category", "datetime"]
+              description: "
+                The user defined group the field corresponds to.
+              "
+
+        description: "The array of field metadata of the dataset."

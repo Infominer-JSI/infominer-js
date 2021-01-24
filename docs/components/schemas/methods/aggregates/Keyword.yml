@@ -1,0 +1,31 @@
+title: "keyword"
+allOf:
+- $ref: "Basic.yml"
+- description: "The keyword statistics generated out of `text` field types."
+  properties:
+    type:
+      default: "keywords"
+    statistics:
+      properties:
+        values:
+          type: array
+          nullable: false
+          minItems: 1
+          items:
+            type: object
+            description: "The value statistics."
+            properties:
+              keyword:
+                type: string
+                nullable: true
+                example: "ljubljana"
+                description: "The keyword value. The keywords are all lower-cased."
+              weight:
+                type: number
+                nullable: false
+                example: 0.91
+                description: "
+                  The weight representing the importance/presence of the keyword
+                  in the set. Higher weight means greater importance.
+                "
+          description: "The array of keyword statistics."

@@ -1,0 +1,39 @@
+title: "item"
+type: object
+description: "The histogram bin."
+properties:
+  min:
+    type: number
+    nullable: false
+    example: 0.1
+    description: "
+      The minimum value of the bin.
+    "
+  max:
+    type: number
+    nullable: false
+    example: 10
+    description: "
+      The maximum value of the bin.
+    "
+  frequency:
+    type: number
+    nullable: false
+    example: 1403
+    description: "
+      The number of document values that fall into this bin.
+    "
+  precent:
+    type: number
+    nullable: false
+    example: 40.12
+    description: "
+      The percent of document values that fall into this bin.
+    "
+  precentSum:
+    type: number
+    nullable: false
+    example: 40.12
+    description: "
+      The cumulative percentage sum.
+    "

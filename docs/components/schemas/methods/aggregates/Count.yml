@@ -1,0 +1,35 @@
+title: "count"
+allOf:
+  - $ref: "Basic.yml"
+  - description: "The count statistics generated out of `class` field types."
+    properties:
+      type:
+        default: "count"
+      statistics:
+        properties:
+          values:
+            type: array
+            nullable: false
+            minItems: 1
+            items:
+              type: object
+              description: "The value statistics."
+              properties:
+                value:
+                  type: string
+                  nullable: false
+                  example: "SecretValue"
+                  description: "The field value."
+                frequency:
+                  type: integer
+                  nullable: false
+                  example: 1100
+                  description: "The number of times this value appeared."
+                precent:
+                  type: number
+                  nullable: false
+                  example: 91.2
+                  description: "
+                    The percentage of the value occuring in the set.
+                  "
+            description: "The array of count statistics."

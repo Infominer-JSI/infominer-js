@@ -1,0 +1,21 @@
+title: "stopwords"
+type: object
+nullable: true
+description: "The stopwords configuration."
+
+properties:
+  language:
+    type: string
+    minLength: 2
+    maxLength: 2
+    nullable: true
+    example: "en"
+    description: "The language value."
+
+  words:
+    type: array
+    nullable: true
+    items:
+      type: string
+    example: ["top", "secret"]
+    description: "The array of specific stopwords to ignore."

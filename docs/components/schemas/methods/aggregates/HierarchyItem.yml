@@ -1,0 +1,32 @@
+title: "item"
+type: object
+description: "The hierarchy item."
+properties:
+  value:
+    type: string
+    nullable: false
+    example: "root"
+    description: "The item value."
+  frequency:
+    type: integer
+    nullable: false
+    example: 1100
+    description: "
+      The number of times this value appeared in the herarchy branch.
+    "
+  precent:
+    type: number
+    nullable: false
+    example: 91.2
+    description: "
+      The percentage of the value occuring in the set.
+    "
+  descendents:
+    type: array
+    minItems: 0
+    items:
+      $ref: "HierarchyItem.yml"
+    description: "
+      The items descendents.
+      If there are no descendents then this is the last one of the branch.
+    "

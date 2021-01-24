@@ -1,0 +1,49 @@
+title: "timeline"
+allOf:
+- $ref: "Basic.yml"
+- description: "The timeline statistics generated out of `datetime` field types."
+  properties:
+    type:
+      default: "timeline"
+    statistics:
+      properties:
+        month:
+          type: array
+          nullable: false
+          minItems: 1
+          items:
+            $ref: "TimelineItem.yml"
+          description: "
+            The array of month statistics.
+            The item interval value is the `month`.
+          "
+        day-of-week:
+          type: array
+          nullable: false
+          minItems: 1
+          items:
+            $ref: "TimelineItem.yml"
+          description: "
+            The array of day-of-week statistics.
+            The item interval value is the `day`.
+          "
+        hour-of-day:
+          type: array
+          nullable: false
+          minItems: 1
+          items:
+            $ref: "TimelineItem.yml"
+          description: "
+            The array of day-of-week statistics.
+            The item interval value is the `hour` (0-23).
+          "
+        date:
+          type: array
+          nullable: false
+          minItems: 1
+          items:
+            $ref: "TimelineItem.yml"
+          description: "
+            The array of date statistics.
+            The item interval value is the `date`.
+          "

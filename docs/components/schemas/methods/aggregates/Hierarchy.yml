@@ -1,0 +1,16 @@
+title: "hierarchy"
+allOf:
+- $ref: "Basic.yml"
+- description: "The hierarchy statistics generated out of `category` field types."
+  properties:
+    type:
+      default: "hierarchy"
+    statistics:
+      properties:
+        values:
+          type: array
+          nullable: false
+          minItems: 1
+          items:
+            $ref: "HierarchyItem.yml"
+          description: "The array of keyword statistics."

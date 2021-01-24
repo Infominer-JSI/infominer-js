@@ -1,0 +1,16 @@
+title: "update"
+type: object
+description: "The method update base."
+properties:
+  step:
+    type: string
+    default: "update"
+    description: "The update step."
+  parameters:
+    type: object
+    description: "The update parameters."
+    anyOf:
+      - $ref: "methods/ActiveLearning.yml"
+required:
+  - step
+  - parameters

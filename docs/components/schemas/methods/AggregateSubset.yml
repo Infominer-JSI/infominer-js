@@ -1,0 +1,31 @@
+title: "subset aggregates"
+allOf:
+- $ref: "Base.yml"
+- type: object
+  properties:
+    method:
+      default: "aggregates.subset"
+    produced:
+      example: [6]
+    parameters:
+      properties:
+        subsetId:
+          type: integer
+          example: 3
+          description: "The subset ID the method was applied on."
+        processing:
+          $ref: "../common/Processing.yml"
+    result:
+      properties:
+        aggregates:
+          type: array
+          description: "
+            The array of aggregates (statistics) for each of the document field.
+          "
+          items:
+            anyOf:
+              - $ref: "aggregates/Count.yml"
+              - $ref: "aggregates/Keyword.yml"
+              - $ref: "aggregates/Timeline.yml"
+              - $ref: "aggregates/Hierarchy.yml"
+              - $ref: "aggregates/Histogram.yml"
