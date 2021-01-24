@@ -1,0 +1,45 @@
+title: "histogram"
+allOf:
+- $ref: "Basic.yml"
+- description: "The histogram statistics generated out of `number` field types."
+  properties:
+    type:
+      default: "histogram"
+    statistics:
+      properties:
+        count:
+          type: number
+          minimum: 0
+          example: 142003
+          description: "The total number of values used for these statistics."
+        min:
+          type: number
+          example: -30.2
+          description: "The minimum value."
+        max:
+          type: number
+          example: 176.8
+          description: "The maximum value."
+        sum:
+          type: number
+          example: 1549001
+          description: "The sum of all values."
+        mean:
+          type: number
+          example: 10
+          description: "The mean of the values."
+        stdev:
+          type: number
+          example: 10
+          description: "The standard deviation of the values."
+        median:
+          type: number
+          example: 42
+          description: "The median of the values."
+        values:
+          type: array
+          nullable: false
+          minItems: 0
+          items:
+            $ref: "HistogramItem.yml"
+          description: "The array of histogram bin statistics."

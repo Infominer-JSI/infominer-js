@@ -1,0 +1,60 @@
+title: "subset"
+type: object
+properties:
+  id:
+    type: integer
+    minimum: 0
+    example: 4
+    description: "The subset ID."
+
+  type:
+    type: string
+    default: "subset"
+    description: "The subset type."
+
+  label:
+    type: string
+    example: "Secret Subset"
+    description: "The subset label."
+
+  description:
+    type: string
+    nullable: true
+    example: null
+    description: "The subset description."
+
+  resultedIn:
+    type: integer
+    minimum: 0
+    nullable: true
+    example: 3
+    description: "
+      The method ID that generated the subset. If the subset the \"root\"
+      subset, this value will be `null`.
+    "
+
+  usedBy:
+    type: array
+    items:
+      type: integer
+      minimum: 0
+    example: [4, 5, 6]
+    description: "The array of method IDs that used the subset in the analysis."
+
+  nDocuments:
+    type: integer
+    minimum: 0
+    example: 1300
+    description: "The number of documents in the subset."
+
+  modified:
+    type: boolean
+    default: false
+    description: "
+      True, if the subset was modified since it was first created. Otherwise, False.
+    "
+  metadata:
+    type: object
+    nullable: true
+    example: null
+    description: "Additional subset metadata."

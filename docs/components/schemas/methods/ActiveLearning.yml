@@ -1,0 +1,196 @@
+title: "active learning"
+allOf:
+- $ref: "Base.yml"
+- type: object
+  properties:
+    method:
+      default: "classifier.active_learning"
+    produced:
+      example: [10, 11]
+    parameters:
+      properties:
+        subsetId:
+          type: integer
+          example: 3
+          description: "The subset ID the method was applied on."
+        fields:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          example: ["field"]
+          description: "
+            The array of field names used in active learning.
+          "
+        processing:
+          $ref: "../common/Processing.yml"
+        method:
+          type: object
+          description: "The algorithm parameters."
+          properties:
+            query:
+              type: string
+              example: "Lets try and find TOP SECRET documents"
+              description: "
+                The source query text used to initalize the active learning. This text
+                will be used to find the positive and negative document examples
+                used to initialize the active learning classifier.
+              "
+            documents:
+              type: array
+              description: "
+                The array of document IDs and their labels.
+              "
+              items:
+                type: object
+                description: "The document labels."
+                properties:
+                  documentId:
+                    type: integer
+                    minimum: 0
+                    description: "The document ID."
+                  label:
+                    type: integer
+                    enum: [-1, 1]
+                    description: "The negative (-1) or positive (1) label of the document."
+            next:
+              type: object
+              description: "
+                The next document selected to be labelled by the user.
+              "
+              properties:
+                documentId:
+                  type: integer
+                  minimum: 0
+                  description: "The document ID."
+                label:
+                  type: integer
+                  enum: [-1, 1]
+                  nullable: true
+                  default: null
+                  description: "The negative (-1) or positive (1) label of the document."
+
+    result:
+      properties:
+        labelCount:
+          type: object
+          description: "
+            The count of positive and negative documents the user labelled.
+          "
+          properties:
+            positive:
+              type: integer
+              minimum: 0
+              example: 4
+              description: "
+                The number of positive labelled documents.
+              "
+            negative:
+              type: integer
+              minimum: 0
+              example: 3
+              description: "
+                The number of negative labelled documents.
+              "
+        positive:
+          type: object
+          description: "The metadata associated with the positive document examples."
+          properties:
+            subsetId:
+              type: integer
+              minimum: 0
+              example: 10
+              description: "
+                The ID of the subset containing the positive document examples.
+              "
+            distances:
+              type: object
+              description: "The positive subset distances/statistics."
+              properties:
+                mean:
+                  type: number
+                  description: "
+                    The mean of distances between the documents and the subset centroid.
+                  "
+                std:
+                  type: number
+                  description: "
+                    The standard deviation average of distances between the documents and the subset centroid.
+                  "
+                min:
+                  type: number
+                  description: "
+                    The minimum distance between the documents and the subset centroid.
+                  "
+                max:
+                  type: number
+                  description: "
+                    The maximum distance between the documents and the subset centroid.
+                  "
+            features:
+              type: array
+              minItems: 1
+              description: "The top 100 features that decided if a document was positive."
+              items:
+                  type: object
+                  description: "
+                    The most positive weighted features.
+                  "
+                  properties:
+                    feature:
+                      type: string
+                      description: "The feature name."
+                    weight:
+                      type: number
+                      description: "The feature weight."
+        negative:
+          type: object
+          description: "The metadata associated with the negative document examples."
+          properties:
+            subsetId:
+              type: integer
+              minimum: 0
+              example: 11
+              description: "
+                The ID of the subset containing the negative document examples.
+              "
+            distances:
+              type: object
+              description: "The negative subset distances/statistics."
+              properties:
+                mean:
+                  type: number
+                  description: "
+                    The mean of distances between the documents and the subset centroid.
+                  "
+                std:
+                  type: number
+                  description: "
+                    The standard deviation average of distances between the documents and the subset centroid.
+                  "
+                min:
+                  type: number
+                  description: "
+                    The minimum distance between the documents and the subset centroid.
+                  "
+                max:
+                  type: number
+                  description: "
+                    The maximum distance between the documents and the subset centroid.
+                  "
+            features:
+              type: array
+              minItems: 1
+              description: "The top 100 features that decided if a document was negative."
+              items:
+                  type: object
+                  description: "
+                    The most negative weighted features.
+                  "
+                  properties:
+                    feature:
+                      type: string
+                      description: "The feature name."
+                    weight:
+                      type: number
+                      description: "The feature weight."

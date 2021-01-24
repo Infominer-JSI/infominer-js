@@ -1,0 +1,21 @@
+type: object
+description: "The field metadata."
+properties:
+  name:
+    type: string
+    example: "field"
+    description: "The field name."
+
+  type:
+    type: string
+    enum: ["number", "text", "class", "category", "datetime"]
+    example: "text"
+    description: "The field type."
+
+  included:
+    type: boolean
+    default: true
+    description: "
+      True, if the field should be included into the dataset analysis.
+      Otherwise, False.
+      "

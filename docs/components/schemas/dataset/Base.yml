@@ -1,0 +1,35 @@
+type: object
+properties:
+  id:
+    type: integer
+    minimum: 1
+    description: "The dataset ID."
+
+  type:
+    type: string
+    default: "dataset"
+    description: "The dataset type."
+
+  name:
+    type: string
+    example: "Secret Dataset"
+    description: "The dataset name."
+
+  description:
+    type: string
+    nullable: true
+    example: "This dataset contains top secret information."
+    description: "The dataset description."
+
+  nDocuments:
+    type: integer
+    nullable: true
+    example: 42000
+    default: null
+    description: "The number of documents in the dataset."
+
+  created:
+    type: string
+    format: date-time
+    example: "2021-01-19T12:31:00.071Z"
+    description: "The dataset creation date."

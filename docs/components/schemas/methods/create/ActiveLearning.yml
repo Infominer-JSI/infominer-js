@@ -1,0 +1,47 @@
+title: "active learning"
+type: object
+properties:
+  type:
+    type: string
+    default: "classifier.active_learning"
+    description: "The method type."
+  parameters:
+    type: object
+    description: "The method creation parameters."
+    properties:
+      subsetId:
+        type: integer
+        example: 3
+        description: "The subset ID the method was applied on."
+      fields:
+        type: array
+        items:
+          type: string
+        minItems: 1
+        example: ["field"]
+        description: "
+          The array of field names used in active learning.
+        "
+      processing:
+        $ref: "../../common/Processing.yml"
+      method:
+        type: object
+        description: "The algorithm parameters."
+        properties:
+          query:
+            type: string
+            example: "Lets try and find TOP SECRET documents"
+            description: "
+              The source query text used to initalize the active learning. This text
+              will be used to find the positive and negative document examples
+              used to initialize the active learning classifier.
+            "
+        required:
+          - query
+    required:
+      - subsetId
+      - fields
+      - method
+required:
+  - type
+  - parameters

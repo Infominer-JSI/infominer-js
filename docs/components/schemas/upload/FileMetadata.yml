@@ -1,0 +1,64 @@
+type: object
+properties:
+  datasets:
+    type: object
+    description: "The file metadata."
+    properties:
+      id:
+        type: integer
+        minimum: 1
+        example: 10
+        description: "The dataset ID."
+
+      filename:
+        type: string
+        example: "secret-file.csv"
+        description: "The uploaded file name."
+
+      delimiter:
+        type: string
+        example: ";"
+        description: "The identified delimiter."
+
+      fields:
+        type: array
+        items:
+          $ref: "Field.yml"
+        description: "The identified fields in the file."
+
+  metadata:
+    type: object
+    description: "The metadata available for selection."
+    properties:
+      types:
+        type: array
+        items:
+          type: string
+          enum: ["number", "text", "class", "category", "datetime"]
+        example: ["number", "text", "class", "category", "datetime"]
+        description: "Possible field types."
+      stopwords:
+        type: object
+        description: "The stopwords metadata."
+        properties:
+          languages:
+            type: array
+            example: [
+              { label: "English", value: "en" },
+              { label: "German", value: "de" },
+              { label: "Slovene", value: "si" },
+              { label: "Spanish", value: "es" },
+              { label: "None", value: "none" },
+            ]
+            items:
+              type: object
+              properties:
+                label:
+                  type: string
+                  description: "The full name of the language."
+                value:
+                  type: string
+                  minLength: 2
+                  maxLength: 2
+                  description: "The language value."
+            description: "The array of all infominer supported stopwords."

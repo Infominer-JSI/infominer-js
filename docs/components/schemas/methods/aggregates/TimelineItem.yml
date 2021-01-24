@@ -1,0 +1,20 @@
+title: "item"
+type: object
+description: "The value statistics."
+properties:
+  interval:
+    type: string
+    nullable: true
+    description: "The timeline item name."
+  frequency:
+    type: integer
+    nullable: false
+    example: 1100
+    description: "The number of times this value appeared."
+  precent:
+    type: number
+    nullable: false
+    example: 91.2
+    description: "
+      The percentage of the value occuring in the set.
+    "

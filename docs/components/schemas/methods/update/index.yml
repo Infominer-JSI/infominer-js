@@ -1,0 +1,5 @@
+type: object
+description: "The method update parameters."
+anyOf:
+  - $ref: "Update.yml"
+  - $ref: "Train.yml"

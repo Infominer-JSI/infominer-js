@@ -1,0 +1,87 @@
+FileMetadataUpload:
+type: object
+properties:
+  datasets:
+    type: object
+    description: "The dataset metadata."
+    properties:
+      name:
+        type: string
+        example: "Secret Dataset"
+        description: "The dataset name."
+
+      description:
+        type: string
+        nullable: true
+        example: "This dataset contains top secret information."
+        description: "The dataset description."
+
+      parameters:
+        type: object
+        description: "The parameters used across the whole dataset analysis."
+        properties:
+          stopwords:
+            allOf:
+              - type: object
+                properties:
+                  language:
+                    description: "
+                      The language value. This should be one of the language
+                      values in the **dataset.metadata.stopwords.languages**
+                      attribute of the [\"Upload a dataset file\"](#/paths/~1datasets/post)
+                      route.
+                    "
+              - $ref: "../common/Stopwords.yml"
+
+      fields:
+        type: array
+        description: "
+          The selected fields metadata. Each item of the array corresponds
+          to one of the fields returned by the [\"Upload a dataset file\"](#/paths/~1datasets/post)
+          route.
+          "
+        items:
+          allOf:
+            - type: object
+              properties:
+                name:
+                  type: string
+                type:
+                  description: "
+                  The selected field. There is some structure of what a
+                  fields type can be based on its suggested type from
+                  the [\"Upload a dataset file\"](#/paths/~1datasets/post)
+                  route. The type can be anything that is equal to or lower
+                  to the recommended type on the following list:
+
+                  - number
+
+                  - datetime
+
+                  - category
+
+                  - class
+
+                  - text
+
+
+                  **Example:** If the field was suggested the **category**
+                  type, it can be any of the **category**, **class**, or
+                  **text** types.
+
+                  **Suggestion:** Set the field type to the suggested ones
+                  provided by the [\"Upload a dataset file\"](#/paths/~1datasets/post)
+                  route.
+                  "
+            - $ref: "Field.yml"
+            - required:
+              - name
+              - type
+              - included
+
+    required:
+      - name
+      - parameters
+      - fields
+required:
+  - datasets

@@ -1,0 +1,8 @@
+type: object
+properties:
+  message:
+    type: string
+    description: "The error message."
+  code:
+    type: integer
+    description: "The error status code."

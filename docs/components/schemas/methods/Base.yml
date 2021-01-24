@@ -1,0 +1,42 @@
+type: object
+properties:
+  id:
+    type: integer
+    minimum: 0
+    description: "The method ID."
+    example: 1
+  type:
+    type: string
+    default: "method"
+    description: "The method type."
+  method:
+    type: string
+    description: "The method algorithm."
+  status:
+    type: string
+    enum: ["IN_QUEUE", "TRAINING", "FINISHED", "ERROR"]
+    default: "IN_QUEUE"
+    description: "The method process status."
+  appliedOn:
+    type: integer
+    example: 3
+    description: "The subset ID the method was applied on."
+  produced:
+    type: array
+    nullable: true
+    items:
+      type: integer
+    minItems: 1
+    description: "The array of subset IDs the method generated."
+  parameters:
+    type: object
+    description: "The method parameters."
+  result:
+    type: object
+    description: "The method result."
+  modified:
+    type: boolean
+    default: false
+    description: "
+      True, if the method was modified since it was finished. Otherwise, False.
+    "

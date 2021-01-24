@@ -1,0 +1,9 @@
+title: "processing"
+type: object
+nullable: true
+description: "
+  The processing parameters used to generate the features and execute the method.
+"
+properties:
+  stopwords:
+    $ref: "Stopwords.yml"

@@ -1,0 +1,8 @@
+allOf:
+  - $ref: "Error.yml"
+  - type: object
+    properties:
+      message:
+        default: "Server Side Error"
+      code:
+        default: 500
