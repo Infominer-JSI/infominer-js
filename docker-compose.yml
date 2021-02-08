@@ -18,7 +18,7 @@ services:
 
   infominer:
     build: .
-    image: eriknovak/infominer
+    image: infominer
     restart: always
     depends_on:
       - postgres
