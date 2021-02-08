@@ -8,9 +8,6 @@ allOf:
     statistics:
       properties:
         values:
-          type: array
-          nullable: false
-          minItems: 1
-          items:
-            $ref: "HierarchyItem.yml"
-          description: "The array of keyword statistics."
+          allOf:
+            - description: "The hierarchy starting with the root element."
+            - $ref: "HierarchyItem.yml"

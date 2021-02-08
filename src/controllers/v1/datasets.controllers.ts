@@ -39,17 +39,19 @@ export const getDatasets = async (req: Request, res: Response, next: NextFunctio
         const { owner } = parseCredentials(req);
         // get and format the datasets
         const results = await datasetModel.getDatasets({ owner });
-        const datasets = results.map((rec: any) => ({
-            id: rec.id,
-            type: "dataset",
-            name: rec.name,
-            description: rec.description,
-            nDocuments: rec.n_documents,
-            created: rec.created,
-            status: rec.status,
-            group: null,
-            order: null,
-        }));
+        const datasets = results
+            .filter((rec: any) => rec.status !== EDatasetStatus.IN_QUEUE)
+            .map((rec: any) => ({
+                id: rec.id,
+                type: "dataset",
+                name: rec.name,
+                description: rec.description,
+                nDocuments: rec.n_documents,
+                created: rec.created,
+                status: rec.status,
+                group: null,
+                order: null,
+            }));
         return res.status(200).json({ datasets });
     } catch (error) {
         return next(new ServerError(error.message));

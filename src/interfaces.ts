@@ -238,7 +238,7 @@ export interface ISubsetUpdateParams {
 //////////////////////////////////////////////////////
 
 export enum EMethodType {
-    AGGREGATE = "aggregate.subset",
+    AGGREGATE = "aggregates.subset",
     CLUSTERING_KMEANS = "clustering.kmeans",
     ACTIVE_LEARNING = "classifier.active_learning",
 }
@@ -333,10 +333,10 @@ export interface IMethodUpdateParams {
 }
 
 export interface IHierarchyObject {
-    value: string;
+    name: string;
     frequency: number;
     precent: number;
-    descendents: IHierarchyObject[];
+    children?: IHierarchyObject[];
 }
 
 //////////////////////////////////////////////////////

@@ -2,7 +2,7 @@ title: "item"
 type: object
 description: "The hierarchy item."
 properties:
-  value:
+  name:
     type: string
     nullable: false
     example: "root"
@@ -21,12 +21,13 @@ properties:
     description: "
       The percentage of the value occuring in the set.
     "
-  descendents:
+  children:
     type: array
+    nullable: true
     minItems: 0
     items:
       $ref: "HierarchyItem.yml"
     description: "
-      The items descendents.
-      If there are no descendents then this is the last one of the branch.
+      The items children.
+      If there are no children then this is the last one of the branch.
     "

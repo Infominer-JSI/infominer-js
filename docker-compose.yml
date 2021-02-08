@@ -16,9 +16,9 @@ services:
     networks:
       infominer:
 
-  backend:
+  infominer:
     build: .
-    image: infominer/backend
+    image: infominer
     restart: always
     depends_on:
       - postgres
@@ -36,7 +36,7 @@ services:
     volumes:
       - imdata:/usr/src/infominer/data
       - imlogs:/usr/src/infominer/logs
-    container_name: backend
+    container_name: infominer
     networks:
       infominer:
 

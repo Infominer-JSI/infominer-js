@@ -485,7 +485,7 @@ export default class BaseDataset {
         if (result?.empty) {
             // assign the empty cluster subset
             result.empty.subsetId = await this._createMethodSubset(
-                { label: "EMPTY CLUSTER", docIds: result.empty.docIds },
+                { label: "empty cluster", docIds: result.empty.docIds },
                 method
             );
         }
@@ -514,8 +514,8 @@ export default class BaseDataset {
     async _createMethodSubset(metadata: any, method: IMethodRecord) {
         const label = metadata.features
             ? metadata.features
-                  .slice(0, 4)
-                  .map((obj: any) => obj.feature)
+                  .slice(0, 3)
+                  .map((obj: any) => obj.feature.toLowerCase())
                   .join(", ")
             : metadata.label;
         // get the cluster documents
