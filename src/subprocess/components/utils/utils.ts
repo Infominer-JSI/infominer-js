@@ -50,22 +50,29 @@ function _aggregatesByField(elements: qm.RecordSet, field: IBaseDatasetField, pa
     // calculate the aggregates
     let statistics: { [key: string]: any } = {};
     if (aggregate === EAggregateType.HIERARCHY) {
-        // get the hierarchy statistics
-        statistics = {
-            type: "hierarchy",
-            values: [],
-        };
+        // generate the hierarchy structure
+        const children: IHierarchyObject[] = [];
         elements.each((rec) => {
             let fieldVals: string[] | null = rec[fieldName]?.toArray();
             if (fieldVals) {
                 fieldVals = fieldVals.filter((val) => val !== "");
                 if (fieldVals.length > 0) {
-                    createHierarchy(statistics.values, fieldVals[0], fieldVals.slice(1));
+                    createHierarchy(children, fieldVals[0], fieldVals.slice(1));
                 }
             }
         });
         // update the hierarchy statistics
-        updateHierarchyPercentage(statistics.values, elements.length);
+        updateHierarchyPercentage(children, elements.length);
+        // define the final statistics
+        statistics = {
+            type: "hierarchy",
+            values: {
+                name: "root",
+                frequency: elements.length,
+                precent: 100,
+                children,
+            },
+        };
     } else if (aggregate === EAggregateType.KEYWORDS) {
         statistics = elements.aggr({
             name: aggregate,
@@ -131,7 +138,7 @@ function _aggregatesByField(elements: qm.RecordSet, field: IBaseDatasetField, pa
 function createHierarchy(hierarchy: IHierarchyObject[], current: string, next: string[]) {
     let object;
     for (const child of hierarchy) {
-        if (child.value === current) {
+        if (child.name === current) {
             child.frequency += 1;
             object = child;
             break;
@@ -139,17 +146,17 @@ function createHierarchy(hierarchy: IHierarchyObject[], current: string, next: s
     }
     if (!object) {
         const length = hierarchy.push({
-            value: current,
+            name: current,
             frequency: 1,
             precent: 0,
-            descendents: [],
+            children: [],
         });
         object = hierarchy[length - 1];
     }
 
     if (next.length > 0) {
         // continue down the hierarchy
-        createHierarchy(object.descendents, next[0], next.slice(1));
+        createHierarchy(object.children as IHierarchyObject[], next[0], next.slice(1));
     }
 }
 
@@ -162,9 +169,11 @@ function updateHierarchyPercentage(hierarchy: IHierarchyObject[], nElements: num
     for (const hier of hierarchy) {
         // get the percentage rate
         hier.precent = hier.frequency / nElements;
-        if (hier.descendents.length > 0) {
+        if (hier.children && hier.children.length > 0) {
             // iterate through its children
-            updateHierarchyPercentage(hier.descendents, nElements);
+            updateHierarchyPercentage(hier.children, nElements);
+        } else {
+            delete hier.children;
         }
     }
 }
