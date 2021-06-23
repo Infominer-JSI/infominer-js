@@ -32,7 +32,7 @@ export default function (passport: PassportStatic) {
         return done(null, user);
     });
     // deserialize the user for the session
-    passport.deserializeUser((obj, done) => {
+    passport.deserializeUser((obj: any, done) => {
         return done(null, obj);
     });
     // configure the strategies
