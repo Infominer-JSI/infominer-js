@@ -6,7 +6,7 @@
 
 // import interfaces
 import { Request, Response, NextFunction } from "express";
-import { EParentCmd, EDatasetStatus, EBaseMode, IDataset } from "../../interfaces";
+import { EParentCmd, EDatasetStatus, EBaseMode } from "../../interfaces";
 
 // import defaults
 import { LABEL2ID } from "../../config/static";
@@ -38,7 +38,20 @@ export const getDatasets = async (req: Request, res: Response, next: NextFunctio
         // get the user making the request
         const { owner } = parseCredentials(req);
         // get and format the datasets
-        const datasets = await datasetModel.getDatasets({ owner });
+        const results = await datasetModel.getDatasets({ owner });
+        const datasets = results
+            .filter((rec: any) => rec.status !== EDatasetStatus.IN_QUEUE)
+            .map((rec: any) => ({
+                id: rec.id,
+                type: "dataset",
+                name: rec.name,
+                description: rec.description,
+                nDocuments: rec.n_documents,
+                created: rec.created,
+                status: rec.status,
+                group: null,
+                order: null,
+            }));
         return res.status(200).json({ datasets });
     } catch (error) {
         return next(new ServerError(error.message));
@@ -209,16 +222,27 @@ export const checkDatasetStatus = async (req: Request, res: Response, next: Next
     const { datasetId } = parseParams(req);
     try {
         // get the associated record
-        const datasets = await datasetModel.getDatasets({ id: datasetId, owner });
+        const records = await datasetModel.getDatasets({ id: datasetId, owner });
         // validate the record
-        if (datasets.length > 1) {
+        if (records.length > 1) {
             return next(new BadRequest(`More than one record found; datasetId=${datasetId}`));
-        } else if (datasets.length === 0) {
+        } else if (records.length === 0) {
             return next(new BadRequest(`No records found; datasetId=${datasetId}`));
         }
         // get the dataset metadata
+        const { id, name, description, n_documents, created, status } = records[0];
         // return the dataset information
-        return res.status(200).json(datasets[0]);
+        return res.status(200).json({
+            id,
+            type: "dataset",
+            name,
+            description,
+            nDocuments: n_documents,
+            created,
+            status,
+            group: null,
+            order: null,
+        });
     } catch (error) {
         return next(new ServerError(error.message));
     }

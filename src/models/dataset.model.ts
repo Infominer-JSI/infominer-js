@@ -5,7 +5,6 @@
  */
 
 // import model
-import { IDataset, EDatasetStatus } from "interfaces";
 import { query } from "./index.model";
 
 // export dataset related queries
@@ -29,21 +28,7 @@ export default class DatasetModel {
             SQLWhere.length ? `WHERE ${SQLWhere.join(" AND ")}` : ""
         } ORDER BY id DESC;`;
         const results = await query(command, params);
-        return results.rows
-            .filter((rec: any) => rec.status !== EDatasetStatus.IN_QUEUE)
-            .map(
-                (rec: any): IDataset => ({
-                    id: rec.id,
-                    type: "dataset",
-                    name: rec.name,
-                    description: rec.description,
-                    nDocuments: rec.n_documents,
-                    created: rec.created,
-                    status: rec.status,
-                    group: null,
-                    order: null,
-                })
-            );
+        return results.rows;
     }
 
     // get all datasets that match the parameters
