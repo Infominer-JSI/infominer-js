@@ -1,10 +1,10 @@
 import {
     IBaseDatasetField,
     IFormatter,
-    ISubsetFormatter,
+    ISubset,
     IMethodRecord,
     ISubsetRecord,
-    IMethodFormatter,
+    IMethod,
     IMethodCreateParams,
     EMethodType,
     IMethodUpdateParams,
@@ -48,9 +48,7 @@ export default class MethodManager {
             methods.filterByField("deleted", false);
         }
         return {
-            methods: methods.map((rec) =>
-                this.formatter.method(rec as IMethodRecord)
-            ) as IMethodFormatter[],
+            methods: methods.map((rec) => this.formatter.method(rec as IMethodRecord)) as IMethod[],
         };
     }
 
@@ -151,7 +149,7 @@ export default class MethodManager {
         // prepare the response
         const response = {
             methods: this.formatter.method(method),
-            subsets: [] as ISubsetFormatter[],
+            subsets: [] as ISubset[],
         };
         // get all associated methods
         if (method.appliedOn) {
