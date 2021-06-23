@@ -2,7 +2,6 @@
 import { Profile, PassportStatic } from "passport";
 
 // import strategies
-import { Strategy as TwitterStrategy } from "passport-twitter";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 
 // get strategy configurations
@@ -21,7 +20,6 @@ function verifyProfile(_aToken: string, _rToken: string, profile: Profile, done:
 
 // prepare the list of strategies
 const strategies: { Strategy: any; config: any }[] = [
-    { Strategy: TwitterStrategy, config: config.login.twitter },
     { Strategy: GoogleStrategy, config: config.login.google },
 ];
 
