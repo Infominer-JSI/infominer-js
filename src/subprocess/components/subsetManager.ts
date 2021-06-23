@@ -163,10 +163,11 @@ export default class SubsetManager {
             });
         }
         if (subset.resultedIn) {
-            subset.resultedIn.$delJoin("produced", subset);
-            if (subset.resultedIn?.produced?.empty) {
+            const method = subset.resultedIn;
+            method?.$delJoin("produced", subset);
+            if (method?.produced?.empty) {
                 // delete the method with all deleted producted subsets
-                callback(base, subset?.resultedIn.$id, this.deleteSubset.bind(this));
+                callback(base, method.$id, this.deleteSubset.bind(this));
             }
         }
         return true;
