@@ -3,7 +3,7 @@ on:
   release:
     types: [published]
 jobs:
-  docker:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - name: Setup QEMU
@@ -20,7 +20,7 @@ jobs:
         with:
           push: true
           tags: eriknovak/infominer:latest
-     - name: Build Docker Image (current version)
+      - name: Build Docker Image (current version)
         uses: docker/build-push-action@v2
         with:
           push: true
