@@ -15,12 +15,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build Docker Image (latest)
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: eriknovak/infominer:latest
-      - name: Build Docker Image (current version)
+      - name: Build Docker Image
         uses: docker/build-push-action@v2
         with:
           push: true
