@@ -16,7 +16,7 @@
 
 ## [1.0.1] - 2021-12-31
 
-**Full Changelog**: https://github.com/Infominer-JSI/infominer/compare/1.0.0...1.0.1
+**Full Changelog**: [`1.0.0...1.0.1`](https://github.com/Infominer-JSI/infominer/compare/1.0.0...1.0.1)
 
 ### Added
 
@@ -31,10 +31,10 @@
 
 ### Security
 
-- [fix] Bump color-string from 1.5.4 to 1.6.0 (@dependabot; [`a74ec44`](https://github.com/Infominer-JSI/infominer/commit/a74ec44))
-- [fix] Bump loadsh from 4.17.20 to 4.17.21 (@dependabot; [`2f628e7`](https://github.com/Infominer-JSI/infominer/commit/2f628e7))
-- [fix] Bump hosted-git-info from 2.8.8 to 2.8.9 (@dependabot; [`a653435`](https://github.com/Infominer-JSI/infominer/commit/a653435))
-- [fix] Bump path-parse from 1.0.6 to 1.0.7 (@dependabot; [`8a1a03d`](https://github.com/Infominer-JSI/infominer/commit/8a1a03d))
+- [fix] Bump color-string from 1.5.4 to 1.6.0 ([`a74ec44`](https://github.com/Infominer-JSI/infominer/commit/a74ec44))
+- [fix] Bump loadsh from 4.17.20 to 4.17.21 ([`2f628e7`](https://github.com/Infominer-JSI/infominer/commit/2f628e7))
+- [fix] Bump hosted-git-info from 2.8.8 to 2.8.9 ([`a653435`](https://github.com/Infominer-JSI/infominer/commit/a653435))
+- [fix] Bump path-parse from 1.0.6 to 1.0.7 ([`8a1a03d`](https://github.com/Infominer-JSI/infominer/commit/8a1a03d))
 
 
 ## [1.0.0] - 2021-02-08
