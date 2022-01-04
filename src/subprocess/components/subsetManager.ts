@@ -2,10 +2,10 @@ import {
     IBaseDatasetField,
     IDocumentRecord,
     IFormatter,
-    IMethodFormatter,
+    IMethod,
     IMethodRecord,
     ISubsetCreateParams,
-    ISubsetFormatter,
+    ISubset,
     ISubsetRecord,
     ISubsetUpdateParams,
 } from "../../interfaces";
@@ -66,9 +66,7 @@ export default class SubsetManager {
             subsets.filterByField("deleted", false);
         }
         return {
-            subsets: subsets.map((rec) =>
-                this.formatter.subset(rec as ISubsetRecord)
-            ) as ISubsetFormatter[],
+            subsets: subsets.map((rec) => this.formatter.subset(rec as ISubsetRecord)) as ISubset[],
         };
     }
 
@@ -99,7 +97,7 @@ export default class SubsetManager {
         // prepare the response
         const response = {
             subsets: this.formatter.subset(subset),
-            methods: [] as IMethodFormatter[],
+            methods: [] as IMethod[],
         };
         // get all associated methods
         if (subset.resultedIn) {
@@ -165,10 +163,11 @@ export default class SubsetManager {
             });
         }
         if (subset.resultedIn) {
-            subset.resultedIn.$delJoin("produced", subset);
-            if (subset.resultedIn?.produced?.empty) {
+            const method = subset.resultedIn;
+            method?.$delJoin("produced", subset);
+            if (method?.produced?.empty) {
                 // delete the method with all deleted producted subsets
-                callback(base, subset?.resultedIn.$id, this.deleteSubset.bind(this));
+                callback(base, method.$id, this.deleteSubset.bind(this));
             }
         }
         return true;

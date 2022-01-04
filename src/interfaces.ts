@@ -29,6 +29,53 @@ export interface IField {
 }
 
 //////////////////////////////////////////////////////
+// Model definitions
+//////////////////////////////////////////////////////
+
+export interface IDataset {
+    id: number;
+    type: "dataset";
+    name: string;
+    description: string | null;
+    nDocuments: number;
+    created: string;
+    status: string;
+    group: string | null;
+    order: number | null;
+}
+
+export interface ISubset {
+    id: number;
+    type: string;
+    label: string;
+    description: string | null;
+    resultedIn: number | null;
+    usedBy: number[] | null;
+    nDocuments: number | null;
+    modified: boolean;
+    metadata: { [key: string]: any } | null;
+}
+
+export interface IMethod {
+    id: number;
+    type: string;
+    method: string;
+    status: EMethodStatus;
+    parameters: any;
+    result: any;
+    produced: number[] | null;
+    appliedOn?: number;
+    modified: boolean;
+}
+
+export interface IDocument {
+    id: number;
+    type: string;
+    subsets: number[] | null;
+    values: { [key: string]: any };
+}
+
+//////////////////////////////////////////////////////
 // Child process handling related interfaces
 //////////////////////////////////////////////////////
 
@@ -356,39 +403,8 @@ export interface IDocumentQuery {
 // Formatter interface
 //////////////////////////////////////////////////////
 
-export interface ISubsetFormatter {
-    id: number;
-    type: string;
-    label: string;
-    description: string | null;
-    resultedIn: number | null;
-    usedBy: number[] | null;
-    nDocuments: number | null;
-    modified: boolean;
-    metadata: { [key: string]: any } | null;
-}
-
-export interface IMethodFormatter {
-    id: number;
-    type: string;
-    method: string;
-    status: EMethodStatus;
-    parameters: any;
-    result: any;
-    produced: number[] | null;
-    appliedOn?: number;
-    modified: boolean;
-}
-
-export interface IDocumentFormatter {
-    id: number;
-    type: string;
-    subsets: number[] | null;
-    values: { [key: string]: any };
-}
-
 export interface IFormatter {
-    subset: (rec: ISubsetRecord) => ISubsetFormatter;
-    method: (rec: IMethodRecord) => IMethodFormatter;
-    document: (rec: IDocumentRecord) => IDocumentFormatter;
+    subset: (rec: ISubsetRecord) => ISubset;
+    method: (rec: IMethodRecord) => IMethod;
+    document: (rec: IDocumentRecord) => IDocument;
 }

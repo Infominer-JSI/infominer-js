@@ -79,7 +79,7 @@ const _initProcess = async (datasetId: number, owner: string, callback: TGeneral
         processControl.createChild(datasetId);
         // send the message to the child process
         processControl.sendAndWait(datasetId, params, callback);
-    } catch (error) {
+    } catch (error: any) {
         callback(error);
     }
 };
@@ -105,21 +105,18 @@ const sendToProcess = (
 };
 
 // general function to handle the child response
-const generalUserResponse = (_req: Request, res: Response, next: NextFunction) => (
-    error?: Error,
-    results?: any
-) => (error ? next(error) : res.status(200).json(results));
+const generalUserResponse =
+    (_req: Request, res: Response, next: NextFunction) => (error?: Error, results?: any) =>
+        error ? next(error) : res.status(200).json(results);
 
 // specific function to handle the child filedownload
-const downloadUserResponse = (_req: Request, res: Response, next: NextFunction) => (
-    error?: Error,
-    results?: any
-) =>
-    error
-        ? next(error)
-        : res.status(200).download(results.filepath, () => {
-              removeFile(results.filepath);
-          });
+const downloadUserResponse =
+    (_req: Request, res: Response, next: NextFunction) => (error?: Error, results?: any) =>
+        error
+            ? next(error)
+            : res.status(200).download(results.filepath, () => {
+                  removeFile(results.filepath);
+              });
 
 // creates a general request wrapper
 async function generalRequestWrapper(

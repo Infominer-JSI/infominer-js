@@ -21,10 +21,5 @@ export default {
             clientSecret: process.env.GOOGLE_CLIENT_SECRET || "clientSecret",
             callbackURL: process.env.GOOGLE_CALLBACK_URL || "callbackURL",
         },
-        twitter: {
-            consumerKey: process.env.TWITTER_CONSUMER_KEY || "consumerKey",
-            consumerSecret: process.env.TWITTER_CONSUMER_SECRET || "clientSecret",
-            callbackURL: process.env.TWITTER_CALLBACK_URL || "callbackURL",
-        },
     },
 };

@@ -3,7 +3,7 @@ import {
     EMethodType,
     IALearnModelParams,
     IALearnUpdateParams,
-    IDocumentFormatter,
+    IDocument,
     ISubsetRecord,
 } from "../../../interfaces";
 
@@ -25,7 +25,7 @@ export default class ActiveLearning extends ModelBasic {
     private labelCount: { positive: number; negative: number };
     private positiveDocs: number[];
     private negativeDocs: number[];
-    private docGenerator: Generator<IDocumentFormatter>;
+    private docGenerator: Generator<IDocument>;
 
     /**
      * Creates a new ActiveLearning instance.
@@ -64,7 +64,7 @@ export default class ActiveLearning extends ModelBasic {
             // set the method status
             this.method.status = EMethodStatus.TRAINING;
             return this;
-        } catch (error) {
+        } catch (error: any) {
             this._handleError(error);
             return this;
         }
@@ -147,7 +147,7 @@ export default class ActiveLearning extends ModelBasic {
                 this.method.result = this.result;
             }
             return this;
-        } catch (error) {
+        } catch (error: any) {
             this._handleError(error);
             return this;
         }
@@ -258,7 +258,7 @@ export default class ActiveLearning extends ModelBasic {
         let negativeExamples = 0;
 
         // TODO: improve initial document retrieval
-        let documentIds: IDocumentFormatter[] = [];
+        let documentIds: IDocument[] = [];
         for (let i = 0; i < this.subset.hasElements.length; i++) {
             if (!ascendingOrder && this.labelCount.positive > 2) {
                 ascendingOrder = true;

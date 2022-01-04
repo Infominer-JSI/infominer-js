@@ -1,11 +1,11 @@
 import {
     IBaseDatasetField,
-    IDocumentFormatter,
+    IDocument,
     IDocumentQuery,
     IDocumentRecord,
     IField,
     IFormatter,
-    IMethodFormatter,
+    IMethod,
     ISubsetRecord,
 } from "../../interfaces";
 
@@ -66,7 +66,7 @@ export default class DocumentManager {
             aggr && documents.length ? getAggregates(documents, fields, processing) : null;
         // return the documents
         return {
-            documents: documents.map((rec) => this.formatter.document(rec)) as IDocumentFormatter[],
+            documents: documents.map((rec) => this.formatter.document(rec)) as IDocument[],
             aggregates,
             metadata: {
                 totalHits: subset.hasElements.length,
@@ -103,7 +103,7 @@ export default class DocumentManager {
         // prepare the response
         const response = {
             documents: this.formatter.document(document),
-            subsets: [] as IMethodFormatter[],
+            subsets: [] as IMethod[],
         };
         // get all associated subsets
         if (document.inSubsets && !document.inSubsets?.empty) {
