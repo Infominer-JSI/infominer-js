@@ -53,7 +53,7 @@ export const getDatasets = async (req: Request, res: Response, next: NextFunctio
                 order: null,
             }));
         return res.status(200).json({ datasets });
-    } catch (error) {
+    } catch (error: any) {
         return next(new ServerError(error.message));
     }
 };
@@ -109,7 +109,7 @@ export const uploadDataset = async (req: Request, res: Response, next: NextFunct
                 },
             },
         });
-    } catch (error) {
+    } catch (error: any) {
         // delete the file
         removeFile(filepath);
         return next(new ServerError(error.message));
@@ -209,7 +209,7 @@ export const createDataset = async (req: Request, res: Response, next: NextFunct
                 );
             }
         });
-    } catch (error) {
+    } catch (error: any) {
         return next(new ServerError(error.message));
     }
 };
@@ -243,7 +243,7 @@ export const checkDatasetStatus = async (req: Request, res: Response, next: Next
             group: null,
             order: null,
         });
-    } catch (error) {
+    } catch (error: any) {
         return next(new ServerError(error.message));
     }
 };

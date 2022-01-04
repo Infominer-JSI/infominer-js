@@ -62,7 +62,7 @@ export async function parseDelimiter(filepath: string, delimiters = [",", ";", "
         }
         // return the selected delimiter
         return selectedDelimiter;
-    } catch (error) {
+    } catch (error: any) {
         // return the error
         return { error };
     }
@@ -112,7 +112,7 @@ export async function parseColumns(filepath: string, delimiter: string) {
         }
         // return the fields
         return { fields };
-    } catch (error) {
+    } catch (error: any) {
         return { error };
     }
 }
