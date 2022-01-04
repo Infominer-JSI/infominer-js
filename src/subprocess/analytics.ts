@@ -143,7 +143,7 @@ async function _functionWrapper(message: IParentMsg, callback: TMessageProcess) 
         // do something with the body and return the output
         const results = await callback(body);
         return processSend({ requestId, results });
-    } catch (error) {
+    } catch (error: any) {
         // send the error message back to the parent
         return processSend({ requestId, error: error.message, statusCode: error.statusCode });
     }

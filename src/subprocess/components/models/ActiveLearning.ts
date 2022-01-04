@@ -64,7 +64,7 @@ export default class ActiveLearning extends ModelBasic {
             // set the method status
             this.method.status = EMethodStatus.TRAINING;
             return this;
-        } catch (error) {
+        } catch (error: any) {
             this._handleError(error);
             return this;
         }
@@ -147,7 +147,7 @@ export default class ActiveLearning extends ModelBasic {
                 this.method.result = this.result;
             }
             return this;
-        } catch (error) {
+        } catch (error: any) {
             this._handleError(error);
             return this;
         }

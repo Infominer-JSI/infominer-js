@@ -40,7 +40,7 @@ export default class KMeansClustering extends ModelBasic {
                 distanceType,
             });
             return this;
-        } catch (error) {
+        } catch (error: any) {
             this._handleError(error);
             return this;
         }
@@ -74,7 +74,7 @@ export default class KMeansClustering extends ModelBasic {
             this.method.result = this.result;
             this.method.status = EMethodStatus.FINISHED;
             return this;
-        } catch (error) {
+        } catch (error: any) {
             this._handleError(error);
             return this;
         }
