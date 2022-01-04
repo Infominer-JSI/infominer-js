@@ -11,7 +11,7 @@
         "postbuild": "cpy --cwd=src --parents '**/*.json' ../dist/",
         "deploy": "npm run build && node ./dist/server.js",
         "test": "echo \"Error: no test specified\" && exit 0",
-        "lint": "eslint './src/**/*.{js,ts}' --quiet --fix",
+        "lint": "eslint './src/**/*.{js,ts}'",
         "clean": "rm -rf ./data && rm -rf ./tmp && cd ./load && node downgrade && node upgrade",
         "dockerize": "docker build -t infominer .",
         "prepare": "husky install"
