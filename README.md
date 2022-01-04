@@ -300,7 +300,7 @@ sudo docker-compose rm -s backend
 sudo docker-compose down
 ```
 
-[docs]: https://infominer-jsi.github.io/infominer-backend/
+[docs]: https://infominer-jsi.github.io/infominer/
 [postgres-docker]: https://hub.docker.com/_/postgres
 [postgres-manual]: https://www.postgresql.org/download/
 [docker-compose]: ./docker/docker-compose.yml
